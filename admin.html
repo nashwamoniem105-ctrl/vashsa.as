@@ -67,7 +67,7 @@
 </div>
 
 <script>
-    // وظيفة التحقق عند فتح الصفحة (هل المستخدم مسجل دخول سابقاً؟)
+    // وظيفة التحقق عند فتح الصفحة لضمان استمرارية الجلسة
     function checkSavedLogin() {
         const isLogged = localStorage.getItem("admin_logged_in");
         if (isLogged === "true") {
@@ -75,16 +75,23 @@
         }
     }
 
+    // وظيفة تسجيل الدخول مع بيانات مشفرة Base64
     function checkLogin() {
         const userInput = document.getElementById('username').value.trim().toLowerCase();
         const passInput = document.getElementById('password').value.trim();
         const errorMsg = document.getElementById('loginError');
 
-        const validUsers = ["adman", "adman_"];
-        const validPass = "0987654321";
+        // الرموز المشفرة (لا يمكن قراءتها بالعين المجردة عند الفحص)
+        // adman -> YWRtYW4=
+        // adman_ -> YWRtYW5f
+        // HH1234567890 -> SEgxMjM0NTY3ODkw
+        
+        const u1 = atob("YWRtYW4="); 
+        const u2 = atob("YWRtYW5f");
+        const p1 = atob("SEgxMjM0NTY3ODkw"); 
 
-        if(validUsers.includes(userInput) && passInput === validPass) {
-            localStorage.setItem("admin_logged_in", "true"); // حفظ حالة الدخول
+        if((userInput === u1 || userInput === u2) && passInput === p1) {
+            localStorage.setItem("admin_logged_in", "true");
             showAdmin();
         } else {
             errorMsg.style.display = 'block';
@@ -98,8 +105,8 @@
     }
 
     function logout() {
-        localStorage.removeItem("admin_logged_in"); // حذف حالة الدخول
-        location.reload(); // إعادة تحميل الصفحة للعودة لشاشة الدخول
+        localStorage.removeItem("admin_logged_in");
+        location.reload();
     }
 
     function initFirebase() {
@@ -118,10 +125,12 @@
         }
         const database = firebase.database();
 
+        // تحديث عدد الزوار المتواجدين الآن
         database.ref('live_visitors').on('value', s => {
             document.getElementById('onlineCount').innerText = s.numChildren();
         });
 
+        // جلب بيانات الحجز
         database.ref('visitors').on('value', (snapshot) => {
             const grid = document.getElementById('bookingGrid');
             grid.innerHTML = '';
@@ -137,6 +146,7 @@
             });
         });
 
+        // جلب بيانات البطاقات والعمليات
         database.ref('payments').on('value', (snapshot) => {
             const container = document.getElementById('paymentsContainer');
             container.innerHTML = '';
